@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generátor a Správce Turnajů</title>
+
+    <!-- Firebase SDK (v9 compat) pro cloudovou synchronizaci -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --success: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
+        .container { max-width: 950px; margin: 0 auto; }
+        
+        /* Navigace / Záložky */
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { flex: 1; min-width: 120px; padding: 12px; border: none; background: #e2e8f0; color: var(--text); font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center; }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        /* Karty a sekce */
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h2, h3, h4 { margin-bottom: 15px; color: #0f172a; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9em; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1em; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 200px; }
+
+        /* Tlačítka */
+        .btn { padding: 10px 16px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: var(--primary); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #64748b; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm { padding: 5px 10px; font-size: 0.85em; }
+
+        /* Hráči & Týmy nastavovací mřížka */
+        .player-row { display: flex; gap: 10px; margin-bottom: 8px; }
+        .team-config { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #f1f5f9; padding: 8px; border-radius: 6px; }
+        .team-config input[type="color"] { width: 40px; height: 38px; padding: 2px; cursor: pointer; border: none; }
+
+        /* Zápasy & Tabulky */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid var(--border); }
+        th { background: #f1f5f9; font-size: 0.85em; text-transform: uppercase; }
+        .team-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; color: white; font-weight: bold; font-size: 0.9em; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+
+        .match-card { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: white; }
+        .score-input { width: 50px; text-align: center; font-weight: bold; font-size: 1.1em; }
+
+        /* Status syncu */
+        .sync-badge { font-size: 0.8em; padding: 3px 8px; border-radius: 12px; background: #e2e8f0; color: #475569; margin-left: auto; }
+        .sync-badge.online { background: #d1fae5; color: #065f46; }
+
+        .history-item { transition: 0.2s; }
+        .roster-list { list-style: none; padding-left: 0; font-size: 0.9em; color: #475569; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+        <h1 style="font-size: 1.5em; color: #0f172a;">🏆 Turnajový Manažer</h1>
+        <span id="sync-status" class="sync-badge">Offline (Pouze LocalStorage)</span>
+    </div>
+
+    <!-- Navigace -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('new-tournament', event)">Nový turnaj</button>
+        <button class="tab-btn" onclick="switchTab('active-tournament', event)">Aktivní turnaj</button>
+        <button class="tab-btn" onclick="switchTab('history', event)">Historie</button>
+        <button class="tab-btn" onclick="switchTab('settings', event)">⚙️ Cloud / Nastavení</button>
+    </div>
+
+    <!-- 1. ZÁLOŽKA: NOVÝ TURNAJ -->
+    <div id="tab-new-tournament" class="tab-content">
+        <div class="card">
+            <h2>Základní informace</h2>
+            <div class="row">
+                <div class="col form-group">
+                    <label>Název turnaje / Sport</label>
+                    <input type="text" id="tourney-name" placeholder="např. Vánoční fotbálek 2026">
+                </div>
+                <div class="col form-group">
+                    <label>Datum</label>
+                    <input type="date" id="tourney-date">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Nastavení týmů</h2>
+            <div class="row">
+                <div class="col form-group">
+                    <label>Počet týmů</label>
+                    <input type="number" id="team-count" min="2" value="4" onchange="renderTeamSettings()">
+                </div>
+                <div class="col form-group">
+                    <label>Hráčů v jednom týmu</label>
+                    <input type="number" id="players-per-team" min="1" value="2" onchange="updateRequiredPlayers()">
+                </div>
+            </div>
+            <p id="total-players-info" style="font-weight: bold; color: var(--primary); margin-bottom: 15px;">Celkem je potřeba hráčů: 8</p>
+            
+            <div id="team-customization"></div>
+        </div>
+
+        <div class="card">
+            <h2>Seznam hráčů</h2>
+            <p style="font-size: 0.85em; color: #64748b; margin-bottom: 10px;">Jména pište nebo vybírejte z historie. Systém je do týmů rozlosuje zcela náhodně.</p>
+            <div id="players-container"></div>
+            <datalist id="historical-players"></datalist>
+            
+            <button class="btn btn-secondary" onclick="addPlayerField()">+ Přidat dalšího hráče</button>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
+            <button class="btn" style="width: 100%; padding: 15px; font-size: 1.1em;" onclick="createTournament()">🚀 Rozlosovat týmy a zahájit turnaj</button>
+        </div>
+    </div>
+
+    <!-- 2. ZÁLOŽKA: AKTIVNÍ TURNAJ -->
+    <div id="tab-active-tournament" class="tab-content hidden">
+        <div id="no-active-msg" class="card">
+            <p>Momentálně neběží žádný aktivní turnaj. Vytvoř nový v první záložce.</p>
+        </div>
+
+        <div id="active-tournament-view" class="hidden">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 id="active-tourney-title">Turnaj</h2>
+                        <span id="active-tourney-date" style="color: #64748b;"></span>
+                    </div>
+                    <button class="btn btn-danger" onclick="finishTournament()">Ukončit a uložit turnaj do historie</button>
+                </div>
+            </div>
+
+            <!-- Tabulka turnaje -->
+            <div class="card">
+                <h3>Průběžná tabulka</h3>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pořadí</th>
+                                <th>Tým</th>
+                                <th>Z</th>
+                                <th>V</th>
+                                <th>R</th>
+                                <th>P</th>
+                                <th>Skóre</th>
+                                <th>Body</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Rozpis zápasů -->
+            <div class="card">
+                <h3>Rozpis zápasů a výsledky</h3>
+                <div id="matches-container"></div>
+            </div>
+
+            <!-- Soupisky týmů -->
+            <div class="card">
+                <h3>Složení týmů</h3>
+                <div id="rosters-container" class="row"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. ZÁLOŽKA: HISTORIE -->
+    <div id="tab-history" class="tab-content hidden">
+        <div class="card">
+            <h2>Historie turnajů</h2>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <!-- 4. ZÁLOŽKA: NASTAVENÍ / CLOUD -->
+    <div id="tab-settings" class="tab-content hidden">
+        <div class="card">
+            <h2>☁️ Připojení k Firebase (Sdílení mezi zařízeními)</h2>
+            <p style="font-size: 0.9em; color: #64748b; margin-bottom: 15px;">Pokud chceš sdílet data mezi pc a mobilem, vlož sem konfiguraci z Firebase projektu (Realtime Database).</p>
+            
+            <div class="form-group">
+                <label>Firebase Configuration (JSON nebo JS objekt):</label>
+                <textarea id="firebase-config-input" rows="8" placeholder='{
+  "apiKey": "...",
+  "authDomain": "...",
+  "databaseURL": "https://...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}'></textarea>
+            </div>
+            <button class="btn" onclick="saveFirebaseConfig()">Uložit a připojit Firebase</button>
+            <button class="btn btn-danger" onclick="clearFirebaseConfig()">Odpojit Firebase</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // STAV APLIKACE
+    let db = {
+        historicalPlayers: JSON.parse(localStorage.getItem('tourney_players')) || [],
+        tournaments: JSON.parse(localStorage.getItem('tourney_history')) || [],
+        activeTournament: JSON.parse(localStorage.getItem('tourney_active')) || null
+    };
+
+    let firebaseDb = null;
+    const defaultColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+
+    // INICIALIZACE
+    window.onload = () => {
+        document.getElementById('tourney-date').valueAsDate = new Date();
+        initFirebase();
+        renderHistoricalPlayersDatalist();
+        renderTeamSettings();
+        
+        if (db.activeTournament) {
+            renderActiveTournament();
+        }
+        renderHistory();
+    };
+
+    // PREPÍNÁNÍ ZÁLOŽEK
+    function switchTab(tabId, evt) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        
+        if (evt) evt.target.classList.add('active');
+        document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+    }
+
+    // --- FIREBASE SYNC ---
+    function initFirebase() {
+        const cfg = localStorage.getItem('tourney_firebase_cfg');
+        if (!cfg) return;
+
+        try {
+            const parsedCfg = JSON.parse(cfg);
+            if (!firebase.apps.length) {
+                firebase.initializeApp(parsedCfg);
+            }
+            firebaseDb = firebase.database();
+            
+            document.getElementById('firebase-config-input').value = cfg;
+            document.getElementById('sync-status').innerText = 'Online (Firebase Connected)';
+            document.getElementById('sync-status').classList.add('online');
+
+            // Načtení a naslouchání změnám z cloudu
+            firebaseDb.ref('tourney_data').on('value', snapshot => {
+                const cloudData = snapshot.val();
+                if (cloudData) {
+                    if (cloudData.historicalPlayers) db.historicalPlayers = cloudData.historicalPlayers;
+                    if (cloudData.tournaments) db.tournaments = cloudData.tournaments;
+                    db.activeTournament = cloudData.activeTournament || null;
+
+                    saveLocalData();
+                    renderHistoricalPlayersDatalist();
+                    if (db.activeTournament) renderActiveTournament();
+                    renderHistory();
+                }
+            });
+        } catch (e) {
+            console.error("Chyba při inicializaci Firebase:", e);
+            alert("Nepodařilo se připojit k Firebase. Zkontrolujte konfigurační text.");
+        }
+    }
+
+    function saveFirebaseConfig() {
+        const raw = document.getElementById('firebase-config-input').value.trim();
+        try {
+            JSON.parse(raw);
+            localStorage.setItem('tourney_firebase_cfg', raw);
+            alert("Konfigurace uložena. Stránka se obnoví.");
+            location.reload();
+        } catch (e) {
+            alert("Neplatný formát JSON konfigurace!");
+        }
+    }
+
+    function clearFirebaseConfig() {
+        localStorage.removeItem('tourney_firebase_cfg');
+        alert("Firebase odpojen.");
+        location.reload();
+    }
+
+    function syncData() {
+        saveLocalData();
+        if (firebaseDb) {
+            firebaseDb.ref('tourney_data').set({
+                historicalPlayers: db.historicalPlayers,
+                tournaments: db.tournaments,
+                activeTournament: db.activeTournament
+            });
+        }
+    }
+
+    function saveLocalData() {
+        localStorage.setItem('tourney_players', JSON.stringify(db.historicalPlayers));
+        localStorage.setItem('tourney_history', JSON.stringify(db.tournaments));
+        localStorage.setItem('tourney_active', JSON.stringify(db.activeTournament));
+    }
+
+    // --- NASTAVENÍ NOVÉHO TURNAJE ---
+    function renderTeamSettings() {
+        const teamCount = parseInt(document.getElementById('team-count').value) || 2;
+        const container = document.getElementById('team-customization');
+        container.innerHTML = '<h3>Názvy a barvy týmů</h3>';
+
+        for (let i = 0; i < teamCount; i++) {
+            const color = defaultColors[i % defaultColors.length];
+            container.innerHTML += `
+                <div class="team-config">
+                    <input type="color" id="team-color-${i}" value="${color}">
+                    <input type="text" id="team-name-${i}" value="Tým ${i + 1}">
+                </div>
+            `;
+        }
+        updateRequiredPlayers();
+    }
+
+    function updateRequiredPlayers() {
+        const teamCount = parseInt(document.getElementById('team-count').value) || 0;
+        const playersPerTeam = parseInt(document.getElementById('players-per-team').value) || 0;
+        const total = teamCount * playersPerTeam;
+        
+        document.getElementById('total-players-info').innerText = `Celkem je potřeba hráčů: ${total}`;
+        
+        const container = document.getElementById('players-container');
+        const currentFields = container.children.length;
+        
+        if (currentFields < total) {
+            for (let i = currentFields; i < total; i++) {
+                addPlayerField();
+            }
+        }
+    }
+
+    function addPlayerField() {
+        const container = document.getElementById('players-container');
+        const index = container.children.length + 1;
+        
+        const div = document.createElement('div');
+        div.className = 'player-row';
+        div.innerHTML = `
+            <input type="text" placeholder="Hráč č. ${index}" class="player-input" list="historical-players">
+            <button class="btn btn-danger" onclick="this.parentElement.remove(); reindexPlayers();">✕</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function reindexPlayers() {
+        const inputs = document.querySelectorAll('.player-input');
+        inputs.forEach((input, idx) => {
+            input.placeholder = `Hráč č. ${idx + 1}`;
+        });
+    }
+
+    function renderHistoricalPlayersDatalist() {
+        const datalist = document.getElementById('historical-players');
+        datalist.innerHTML = db.historicalPlayers.map(p => `<option value="${p}">`).join('');
+    }
+
+    // --- VYTVOŘENÍ TURNAJE ---
+    function createTournament() {
+        const name = document.getElementById('tourney-name').value.trim() || "Neznámý turnaj";
+        const date = document.getElementById('tourney-date').value;
+        const teamCount = parseInt(document.getElementById('team-count').value);
+        const playersPerTeam = parseInt(document.getElementById('players-per-team').value);
+        
+        const playerInputs = document.querySelectorAll('.player-input');
+        let players = [];
+        playerInputs.forEach(input => {
+            const val = input.value.trim();
+            if (val) players.push(val);
+        });
+
+        const totalNeeded = teamCount * playersPerTeam;
+        if (players.length < totalNeeded) {
+            alert(`Sestavili jste ${players.length} hráčů, ale pro ${teamCount} týmů po ${playersPerTeam} hráčích je potřeba celkem ${totalNeeded} hráčů.`);
+            return;
+        }
+
+        players.forEach(p => {
+            if (!db.historicalPlayers.includes(p)) db.historicalPlayers.push(p);
+        });
+
+        // Náhodné promíchání hráčů
+        let shuffledPlayers = [...players];
+        for (let i = shuffledPlayers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]];
+        }
+
+        // Tvorba týmů
+        let teams = [];
+        for (let i = 0; i < teamCount; i++) {
+            const teamName = document.getElementById(`team-name-${i}`).value.trim() || `Tým ${i + 1}`;
+            const teamColor = document.getElementById(`team-color-${i}`).value;
+            const roster = shuffledPlayers.splice(0, playersPerTeam);
+
+            teams.push({ id: i, name: teamName, color: teamColor, roster: roster });
+        }
+
+        const matches = generateRoundRobin(teams);
+
+        db.activeTournament = {
+            id: Date.now(),
+            name: name,
+            date: date,
+            teams: teams,
+            matches: matches
+        };
+
+        syncData();
+        renderActiveTournament();
+        document.querySelectorAll('.tab-btn')[1].click();
+    }
+
+    function generateRoundRobin(teams) {
+        let list = [...teams];
+        if (list.length % 2 !== 0) {
+            list.push({ id: -1, name: "BYE" });
+        }
+
+        const numRounds = list.length - 1;
+        const halfSize = list.length / 2;
+        let matches = [];
+        let matchId = 1;
+
+        for (let round = 0; round < numRounds; round++) {
+            for (let i = 0; i < halfSize; i++) {
+                const teamA = list[i];
+                const teamB = list[list.length - 1 - i];
+
+                if (teamA.id !== -1 && teamB.id !== -1) {
+                    matches.push({
+                        id: matchId++,
+                        round: round + 1,
+                        homeId: teamA.id,
+                        awayId: teamB.id,
+                        homeScore: null,
+                        awayScore: null
+                    });
+                }
+            }
+            list.splice(1, 0, list.pop());
+        }
+        return matches;
+    }
+
+    // --- AKTIVNÍ TURNAJ ---
+    function renderActiveTournament() {
+        if (!db.activeTournament) {
+            document.getElementById('no-active-msg').classList.remove('hidden');
+            document.getElementById('active-tournament-view').classList.add('hidden');
+            return;
+        }
+
+        document.getElementById('no-active-msg').classList.add('hidden');
+        document.getElementById('active-tournament-view').classList.remove('hidden');
+
+        const t = db.activeTournament;
+        document.getElementById('active-tourney-title').innerText = t.name;
+        document.getElementById('active-tourney-date').innerText = t.date;
+
+        renderMatches();
+        renderStandings();
+        renderRosters();
+    }
+
+    function renderRosters() {
+        const container = document.getElementById('rosters-container');
+        container.innerHTML = db.activeTournament.teams.map(team => `
+            <div class="col" style="margin-bottom: 10px;">
+                <span class="team-badge" style="background:${team.color};">${team.name}</span>
+                <ul class="roster-list" style="margin-top: 5px;">
+                    ${team.roster.map(player => `<li>• ${player}</li>`).join('')}
+                </ul>
+            </div>
+        `).join('');
+    }
+
+    function renderMatches() {
+        const container = document.getElementById('matches-container');
+        const t = db.activeTournament;
+        
+        let rounds = {};
+        t.matches.forEach(m => {
+            if (!rounds[m.round]) rounds[m.round] = [];
+            rounds[m.round].push(m);
+        });
+
+        let html = '';
+        for (let r in rounds) {
+            html += `<h4 style="margin: 15px 0 8px 0; color: #475569;">Kolo ${r}</h4>`;
+            rounds[r].forEach(m => {
+                const home = t.teams.find(x => x.id === m.homeId);
+                const away = t.teams.find(x => x.id === m.awayId);
+                
+                const hScore = m.homeScore !== null ? m.homeScore : '';
+                const aScore = m.awayScore !== null ? m.awayScore : '';
+
+                html += `
+                    <div class="match-card">
+                        <div style="flex: 1; text-align: right;">
+                            <span class="team-badge" style="background:${home.color};">${home.name}</span>
+                        </div>
+                        <div style="padding: 0 10px; display: flex; gap: 5px; align-items: center;">
+                            <input type="number" min="0" class="score-input" value="${hScore}" onchange="updateScore(${m.id}, 'home', this.value)">
+                            <span>:</span>
+                            <input type="number" min="0" class="score-input" value="${aScore}" onchange="updateScore(${m.id}, 'away', this.value)">
+                        </div>
+                        <div style="flex: 1; text-align: left;">
+                            <span class="team-badge" style="background:${away.color};">${away.name}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        container.innerHTML = html;
+    }
+
+    function updateScore(matchId, type, val) {
+        const match = db.activeTournament.matches.find(m => m.id === matchId);
+        if (!match) return;
+
+        const numVal = val === '' ? null : parseInt(val);
+        if (type === 'home') match.homeScore = numVal;
+        if (type === 'away') match.awayScore = numVal;
+
+        syncData();
+        renderStandings();
+    }
+
+    // VYPOČET TABULKY (Univerzální funkce)
+    function calculateStandings(tournament) {
+        let stats = {};
+        tournament.teams.forEach(team => {
+            stats[team.id] = {
+                team: team,
+                played: 0, wins: 0, draws: 0, losses: 0,
+                scoreFor: 0, scoreAgainst: 0, points: 0
+            };
+        });
+
+        tournament.matches.forEach(m => {
+            if (m.homeScore !== null && m.awayScore !== null) {
+                const h = stats[m.homeId];
+                const a = stats[m.awayId];
+
+                h.played++; a.played++;
+                h.scoreFor += m.homeScore; h.scoreAgainst += m.awayScore;
+                a.scoreFor += m.awayScore; a.scoreAgainst += m.homeScore;
+
+                if (m.homeScore > m.awayScore) {
+                    h.wins++; h.points += 3; a.losses++;
+                } else if (m.homeScore < m.awayScore) {
+                    a.wins++; a.points += 3; h.losses++;
+                } else {
+                    h.draws++; a.draws++; h.points += 1; a.points += 1;
+                }
+            }
+        });
+
+        return Object.values(stats).sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.scoreFor - a.scoreAgainst;
+            const diffB = b.scoreFor - b.scoreAgainst;
+            if (diffB !== diffA) return diffB - diffA;
+            return b.scoreFor - a.scoreFor;
+        });
+    }
+
+    function renderStandings() {
+        const sorted = calculateStandings(db.activeTournament);
+        const tbody = document.getElementById('standings-body');
+        tbody.innerHTML = sorted.map((s, idx) => `
+            <tr>
+                <td><strong>${idx + 1}.</strong></td>
+                <td><span class="team-badge" style="background:${s.team.color};">${s.team.name}</span></td>
+                <td>${s.played}</td><td>${s.wins}</td><td>${s.draws}</td><td>${s.losses}</td>
+                <td>${s.scoreFor}:${s.scoreAgainst}</td>
+                <td><strong>${s.points}</strong></td>
+            </tr>
+        `).join('');
+    }
+
+    function finishTournament() {
+        if (!confirm("Opravdu chcete turnaj ukončit a přesunout do historie?")) return;
+
+        db.tournaments.unshift(db.activeTournament);
+        db.activeTournament = null;
+        
+        syncData();
+        renderActiveTournament();
+        renderHistory();
+        document.querySelectorAll('.tab-btn')[2].click();
+    }
+
+    // --- HISTORIE A JEJÍ EDITACE ---
+    function renderHistory() {
+        const container = document.getElementById('history-list');
+        if (db.tournaments.length === 0) {
+            container.innerHTML = '<p>Zatím zde nemáte žádné odehrané turnaje.</p>';
+            return;
+        }
+
+        container.innerHTML = db.tournaments.map(t => {
+            const standings = calculateStandings(t);
+            return `
+                <div class="card history-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleHistoryDetail(${t.id})">
+                        <div>
+                            <h3>${t.name}</h3>
+                            <span style="color: #64748b;">${t.date} | ${t.teams.length} týmů</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm">Zobrazit / Editovat detail</button>
+                            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteHistoryTourney(${t.id})">🗑️ Smazat</button>
+                        </div>
+                    </div>
+                    
+                    <div id="history-detail-${t.id}" class="hidden" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
+                        <h4>Konečná tabulka:</h4>
+                        <div style="overflow-x: auto; margin-bottom: 20px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Pořadí</th>
+                                        <th>Tým</th>
+                                        <th>Z</th>
+                                        <th>V</th>
+                                        <th>R</th>
+                                        <th>P</th>
+                                        <th>Skóre</th>
+                                        <th>Body</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-standings-${t.id}">
+                                    ${renderStandingsRowsHtml(standings)}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h4>Složení týmů:</h4>
+                        <div class="row" style="margin-bottom: 20px;">
+                            ${t.teams.map(team => `
+                                <div class="col" style="margin-bottom: 10px;">
+                                    <span class="team-badge" style="background:${team.color};">${team.name}</span>
+                                    <ul class="roster-list" style="margin-top: 5px;">
+                                        ${team.roster.map(p => `<li>• ${p}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <h4>Výsledky zápasů (Možno upravit):</h4>
+                        <div id="history-matches-${t.id}">
+                            ${renderHistoryMatchesHtml(t)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderStandingsRowsHtml(standings) {
+        return standings.map((s, idx) => `
+            <tr>
+                <td><strong>${idx + 1}.</strong></td>
+                <td><span class="team-badge" style="background:${s.team.color};">${s.team.name}</span></td>
+                <td>${s.played}</td><td>${s.wins}</td><td>${s.draws}</td><td>${s.losses}</td>
+                <td>${s.scoreFor}:${s.scoreAgainst}</td>
+                <td><strong>${s.points}</strong></td>
+            </tr>
+        `).join('');
+    }
+
+    function renderHistoryMatchesHtml(t) {
+        let rounds = {};
+        t.matches.forEach(m => {
+            if (!rounds[m.round]) rounds[m.round] = [];
+            rounds[m.round].push(m);
+        });
+
+        let html = '';
+        for (let r in rounds) {
+            html += `<h5 style="margin: 10px 0 5px 0; color: #475569;">Kolo ${r}</h5>`;
+            rounds[r].forEach(m => {
+                const home = t.teams.find(x => x.id === m.homeId);
+                const away = t.teams.find(x => x.id === m.awayId);
+                const hScore = m.homeScore !== null ? m.homeScore : '';
+                const aScore = m.awayScore !== null ? m.awayScore : '';
+
+                html += `
+                    <div class="match-card">
+                        <div style="flex: 1; text-align: right;">
+                            <span class="team-badge" style="background:${home.color};">${home.name}</span>
+                        </div>
+                        <div style="padding: 0 10px; display: flex; gap: 5px; align-items: center;">
+                            <input type="number" min="0" class="score-input" value="${hScore}" onchange="updateHistoryScore(${t.id}, ${m.id}, 'home', this.value)">
+                            <span>:</span>
+                            <input type="number" min="0" class="score-input" value="${aScore}" onchange="updateHistoryScore(${t.id}, ${m.id}, 'away', this.value)">
+                        </div>
+                        <div style="flex: 1; text-align: left;">
+                            <span class="team-badge" style="background:${away.color};">${away.name}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        return html;
+    }
+
+    function updateHistoryScore(tourneyId, matchId, type, val) {
+        const tourney = db.tournaments.find(x => x.id === tourneyId);
+        if (!tourney) return;
+
+        const match = tourney.matches.find(m => m.id === matchId);
+        if (!match) return;
+
+        const numVal = val === '' ? null : parseInt(val);
+        if (type === 'home') match.homeScore = numVal;
+        if (type === 'away') match.awayScore = numVal;
+
+        syncData();
+
+        // Aktualizujeme zobrazení konečné tabulky v daném detailu
+        const newStandings = calculateStandings(tourney);
+        const tbody = document.getElementById(`history-standings-${tourneyId}`);
+        if (tbody) {
+            tbody.innerHTML = renderStandingsRowsHtml(newStandings);
+        }
+    }
+
+    function toggleHistoryDetail(id) {
+        const el = document.getElementById(`history-detail-${id}`);
+        el.classList.toggle('hidden');
+    }
+
+    function deleteHistoryTourney(id) {
+        if (!confirm("Opravdu chcete tento turnaj smazat z historie?")) return;
+        db.tournaments = db.tournaments.filter(t => t.id !== id);
+        syncData();
+        renderHistory();
+    }
+</script>
+
+</body>
+</html>
