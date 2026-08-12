@@ -3,9 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generátor a Správce Turnajů</title>
+    <title>Turnaje</title>
 
-    <!-- Firebase SDK (v9 compat) pro cloudovou synchronizaci -->
+    <!-- Název a nastavení pro instalaci na plochu (PWA) -->
+    <meta name="apple-mobile-web-app-title" content="Turnaje">
+    <meta name="application-name" content="Turnaje">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Ikonka poháru 🏆 pro mobilní plochu a záložku -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
+
+    <!-- Manifest definující název a ikonku při instalaci na plochu -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Turnaje","short_name":"Turnaje","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#2563eb","icons":[{"src":"data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>","sizes":"512x512","type":"image/svg+xml"}]}'>
+
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -17,19 +30,16 @@
             --card-bg: #ffffff;
             --text: #1e293b;
             --border: #e2e8f0;
-            --success: #10b981;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
         body { background-color: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
         .container { max-width: 950px; margin: 0 auto; }
         
-        /* Navigace / Záložky */
         .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab-btn { flex: 1; min-width: 120px; padding: 12px; border: none; background: #e2e8f0; color: var(--text); font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center; }
+        .tab-btn { flex: 1; min-width: 110px; padding: 12px; border: none; background: #e2e8f0; color: var(--text); font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center; }
         .tab-btn.active { background: var(--primary); color: white; }
 
-        /* Karty a sekce */
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         h2, h3, h4 { margin-bottom: 15px; color: #0f172a; }
         
@@ -39,7 +49,6 @@
         .row { display: flex; gap: 15px; flex-wrap: wrap; }
         .col { flex: 1; min-width: 200px; }
 
-        /* Tlačítka */
         .btn { padding: 10px 16px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: var(--primary); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; }
         .btn:hover { background: var(--primary-hover); }
         .btn-secondary { background: #64748b; }
@@ -48,12 +57,10 @@
         .btn-danger:hover { background: #dc2626; }
         .btn-sm { padding: 5px 10px; font-size: 0.85em; }
 
-        /* Hráči & Týmy nastavovací mřížka */
         .player-row { display: flex; gap: 10px; margin-bottom: 8px; }
         .team-config { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #f1f5f9; padding: 8px; border-radius: 6px; }
         .team-config input[type="color"] { width: 40px; height: 38px; padding: 2px; cursor: pointer; border: none; }
 
-        /* Zápasy & Tabulky */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 10px; text-align: center; border-bottom: 1px solid var(--border); }
         th { background: #f1f5f9; font-size: 0.85em; text-transform: uppercase; }
@@ -62,13 +69,10 @@
         .match-card { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: white; }
         .score-input { width: 50px; text-align: center; font-weight: bold; font-size: 1.1em; }
 
-        /* Status syncu */
-        .sync-badge { font-size: 0.8em; padding: 3px 8px; border-radius: 12px; background: #e2e8f0; color: #475569; margin-left: auto; }
+        .sync-badge { font-size: 0.8em; padding: 3px 8px; border-radius: 12px; background: #fca5a5; color: #991b1b; margin-left: auto; }
         .sync-badge.online { background: #d1fae5; color: #065f46; }
 
-        .history-item { transition: 0.2s; }
         .roster-list { list-style: none; padding-left: 0; font-size: 0.9em; color: #475569; }
-
         .hidden { display: none !important; }
     </style>
 </head>
@@ -76,8 +80,8 @@
 
 <div class="container">
     <div style="display: flex; align-items: center; margin-bottom: 15px;">
-        <h1 style="font-size: 1.5em; color: #0f172a;">🏆 Turnajový Manažer</h1>
-        <span id="sync-status" class="sync-badge">Offline (Pouze LocalStorage)</span>
+        <h1 style="font-size: 1.5em; color: #0f172a;">🏆 Turnaje</h1>
+        <span id="sync-status" class="sync-badge">Connecting...</span>
     </div>
 
     <!-- Navigace -->
@@ -85,7 +89,6 @@
         <button class="tab-btn active" onclick="switchTab('new-tournament', event)">Nový turnaj</button>
         <button class="tab-btn" onclick="switchTab('active-tournament', event)">Aktivní turnaj</button>
         <button class="tab-btn" onclick="switchTab('history', event)">Historie</button>
-        <button class="tab-btn" onclick="switchTab('settings', event)">⚙️ Cloud / Nastavení</button>
     </div>
 
     <!-- 1. ZÁLOŽKA: NOVÝ TURNAJ -->
@@ -95,7 +98,7 @@
             <div class="row">
                 <div class="col form-group">
                     <label>Název turnaje / Sport</label>
-                    <input type="text" id="tourney-name" placeholder="např. Vánoční fotbálek 2026">
+                    <input type="text" id="tourney-name" placeholder="např. Vánoční turnaj v badmintonu">
                 </div>
                 <div class="col form-group">
                     <label>Datum</label>
@@ -150,7 +153,6 @@
                 </div>
             </div>
 
-            <!-- Tabulka turnaje -->
             <div class="card">
                 <h3>Průběžná tabulka</h3>
                 <div style="overflow-x: auto;">
@@ -172,13 +174,11 @@
                 </div>
             </div>
 
-            <!-- Rozpis zápasů -->
             <div class="card">
                 <h3>Rozpis zápasů a výsledky</h3>
                 <div id="matches-container"></div>
             </div>
 
-            <!-- Soupisky týmů -->
             <div class="card">
                 <h3>Složení týmů</h3>
                 <div id="rosters-container" class="row"></div>
@@ -193,33 +193,21 @@
             <div id="history-list"></div>
         </div>
     </div>
-
-    <!-- 4. ZÁLOŽKA: NASTAVENÍ / CLOUD -->
-    <div id="tab-settings" class="tab-content hidden">
-        <div class="card">
-            <h2>☁️ Připojení k Firebase (Sdílení mezi zařízeními)</h2>
-            <p style="font-size: 0.9em; color: #64748b; margin-bottom: 15px;">Pokud chceš sdílet data mezi pc a mobilem, vlož sem konfiguraci z Firebase projektu (Realtime Database).</p>
-            
-            <div class="form-group">
-                <label>Firebase Configuration (JSON nebo JS objekt):</label>
-                <textarea id="firebase-config-input" rows="8" placeholder='{
-  "apiKey": "...",
-  "authDomain": "...",
-  "databaseURL": "https://...",
-  "projectId": "...",
-  "storageBucket": "...",
-  "messagingSenderId": "...",
-  "appId": "..."
-}'></textarea>
-            </div>
-            <button class="btn" onclick="saveFirebaseConfig()">Uložit a připojit Firebase</button>
-            <button class="btn btn-danger" onclick="clearFirebaseConfig()">Odpojit Firebase</button>
-        </div>
-    </div>
 </div>
 
 <script>
-    // STAV APLIKACE
+    // Konfigurace Firebase načtená z tvého účtu
+    const firebaseConfig = {
+        apiKey: "AIzaSyDCRCC7JZ8fUO0ly5EBrJwIMrvB8eq3MD4",
+        authDomain: "hc-slovan-louny.firebaseapp.com",
+        databaseURL: "https://hc-slovan-louny-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "hc-slovan-louny",
+        storageBucket: "hc-slovan-louny.firebasestorage.app",
+        messagingSenderId: "1095365058859",
+        appId: "1:1095365058859:web:1987c8eac2305f9ccca56e",
+        measurementId: "G-7J2DJX4NLJ"
+    };
+
     let db = {
         historicalPlayers: JSON.parse(localStorage.getItem('tourney_players')) || [],
         tournaments: JSON.parse(localStorage.getItem('tourney_history')) || [],
@@ -229,20 +217,16 @@
     let firebaseDb = null;
     const defaultColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-    // INICIALIZACE
     window.onload = () => {
         document.getElementById('tourney-date').valueAsDate = new Date();
         initFirebase();
         renderHistoricalPlayersDatalist();
         renderTeamSettings();
         
-        if (db.activeTournament) {
-            renderActiveTournament();
-        }
+        if (db.activeTournament) renderActiveTournament();
         renderHistory();
     };
 
-    // PREPÍNÁNÍ ZÁLOŽEK
     function switchTab(tabId, evt) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
@@ -251,24 +235,15 @@
         document.getElementById(`tab-${tabId}`).classList.remove('hidden');
     }
 
-    // --- FIREBASE SYNC ---
     function initFirebase() {
-        const cfg = localStorage.getItem('tourney_firebase_cfg');
-        if (!cfg) return;
-
         try {
-            const parsedCfg = JSON.parse(cfg);
-            if (!firebase.apps.length) {
-                firebase.initializeApp(parsedCfg);
-            }
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
             firebaseDb = firebase.database();
             
-            document.getElementById('firebase-config-input').value = cfg;
             document.getElementById('sync-status').innerText = 'Online (Firebase Connected)';
             document.getElementById('sync-status').classList.add('online');
 
-            // Načtení a naslouchání změnám z cloudu
-            firebaseDb.ref('tourney_data').on('value', snapshot => {
+            firebaseDb.ref('tourney_app_data').on('value', snapshot => {
                 const cloudData = snapshot.val();
                 if (cloudData) {
                     if (cloudData.historicalPlayers) db.historicalPlayers = cloudData.historicalPlayers;
@@ -283,32 +258,14 @@
             });
         } catch (e) {
             console.error("Chyba při inicializaci Firebase:", e);
-            alert("Nepodařilo se připojit k Firebase. Zkontrolujte konfigurační text.");
+            document.getElementById('sync-status').innerText = 'Offline (Chyba Firebase)';
         }
-    }
-
-    function saveFirebaseConfig() {
-        const raw = document.getElementById('firebase-config-input').value.trim();
-        try {
-            JSON.parse(raw);
-            localStorage.setItem('tourney_firebase_cfg', raw);
-            alert("Konfigurace uložena. Stránka se obnoví.");
-            location.reload();
-        } catch (e) {
-            alert("Neplatný formát JSON konfigurace!");
-        }
-    }
-
-    function clearFirebaseConfig() {
-        localStorage.removeItem('tourney_firebase_cfg');
-        alert("Firebase odpojen.");
-        location.reload();
     }
 
     function syncData() {
         saveLocalData();
         if (firebaseDb) {
-            firebaseDb.ref('tourney_data').set({
+            firebaseDb.ref('tourney_app_data').set({
                 historicalPlayers: db.historicalPlayers,
                 tournaments: db.tournaments,
                 activeTournament: db.activeTournament
@@ -322,7 +279,6 @@
         localStorage.setItem('tourney_active', JSON.stringify(db.activeTournament));
     }
 
-    // --- NASTAVENÍ NOVÉHO TURNAJE ---
     function renderTeamSettings() {
         const teamCount = parseInt(document.getElementById('team-count').value) || 2;
         const container = document.getElementById('team-customization');
@@ -351,9 +307,7 @@
         const currentFields = container.children.length;
         
         if (currentFields < total) {
-            for (let i = currentFields; i < total; i++) {
-                addPlayerField();
-            }
+            for (let i = currentFields; i < total; i++) addPlayerField();
         }
     }
 
@@ -371,27 +325,23 @@
     }
 
     function reindexPlayers() {
-        const inputs = document.querySelectorAll('.player-input');
-        inputs.forEach((input, idx) => {
+        document.querySelectorAll('.player-input').forEach((input, idx) => {
             input.placeholder = `Hráč č. ${idx + 1}`;
         });
     }
 
     function renderHistoricalPlayersDatalist() {
-        const datalist = document.getElementById('historical-players');
-        datalist.innerHTML = db.historicalPlayers.map(p => `<option value="${p}">`).join('');
+        document.getElementById('historical-players').innerHTML = db.historicalPlayers.map(p => `<option value="${p}">`).join('');
     }
 
-    // --- VYTVOŘENÍ TURNAJE ---
     function createTournament() {
         const name = document.getElementById('tourney-name').value.trim() || "Neznámý turnaj";
         const date = document.getElementById('tourney-date').value;
         const teamCount = parseInt(document.getElementById('team-count').value);
         const playersPerTeam = parseInt(document.getElementById('players-per-team').value);
         
-        const playerInputs = document.querySelectorAll('.player-input');
         let players = [];
-        playerInputs.forEach(input => {
+        document.querySelectorAll('.player-input').forEach(input => {
             const val = input.value.trim();
             if (val) players.push(val);
         });
@@ -406,14 +356,12 @@
             if (!db.historicalPlayers.includes(p)) db.historicalPlayers.push(p);
         });
 
-        // Náhodné promíchání hráčů
         let shuffledPlayers = [...players];
         for (let i = shuffledPlayers.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]];
         }
 
-        // Tvorba týmů
         let teams = [];
         for (let i = 0; i < teamCount; i++) {
             const teamName = document.getElementById(`team-name-${i}`).value.trim() || `Tým ${i + 1}`;
@@ -423,14 +371,12 @@
             teams.push({ id: i, name: teamName, color: teamColor, roster: roster });
         }
 
-        const matches = generateRoundRobin(teams);
-
         db.activeTournament = {
             id: Date.now(),
             name: name,
             date: date,
             teams: teams,
-            matches: matches
+            matches: generateRoundRobin(teams)
         };
 
         syncData();
@@ -440,9 +386,7 @@
 
     function generateRoundRobin(teams) {
         let list = [...teams];
-        if (list.length % 2 !== 0) {
-            list.push({ id: -1, name: "BYE" });
-        }
+        if (list.length % 2 !== 0) list.push({ id: -1, name: "BYE" });
 
         const numRounds = list.length - 1;
         const halfSize = list.length / 2;
@@ -470,7 +414,6 @@
         return matches;
     }
 
-    // --- AKTIVNÍ TURNAJ ---
     function renderActiveTournament() {
         if (!db.activeTournament) {
             document.getElementById('no-active-msg').classList.remove('hidden');
@@ -491,8 +434,7 @@
     }
 
     function renderRosters() {
-        const container = document.getElementById('rosters-container');
-        container.innerHTML = db.activeTournament.teams.map(team => `
+        document.getElementById('rosters-container').innerHTML = db.activeTournament.teams.map(team => `
             <div class="col" style="margin-bottom: 10px;">
                 <span class="team-badge" style="background:${team.color};">${team.name}</span>
                 <ul class="roster-list" style="margin-top: 5px;">
@@ -554,15 +496,10 @@
         renderStandings();
     }
 
-    // VYPOČET TABULKY (Univerzální funkce)
     function calculateStandings(tournament) {
         let stats = {};
         tournament.teams.forEach(team => {
-            stats[team.id] = {
-                team: team,
-                played: 0, wins: 0, draws: 0, losses: 0,
-                scoreFor: 0, scoreAgainst: 0, points: 0
-            };
+            stats[team.id] = { team: team, played: 0, wins: 0, draws: 0, losses: 0, scoreFor: 0, scoreAgainst: 0, points: 0 };
         });
 
         tournament.matches.forEach(m => {
@@ -595,8 +532,7 @@
 
     function renderStandings() {
         const sorted = calculateStandings(db.activeTournament);
-        const tbody = document.getElementById('standings-body');
-        tbody.innerHTML = sorted.map((s, idx) => `
+        document.getElementById('standings-body').innerHTML = sorted.map((s, idx) => `
             <tr>
                 <td><strong>${idx + 1}.</strong></td>
                 <td><span class="team-badge" style="background:${s.team.color};">${s.team.name}</span></td>
@@ -619,7 +555,6 @@
         document.querySelectorAll('.tab-btn')[2].click();
     }
 
-    // --- HISTORIE A JEJÍ EDITACE ---
     function renderHistory() {
         const container = document.getElementById('history-list');
         if (db.tournaments.length === 0) {
@@ -630,7 +565,7 @@
         container.innerHTML = db.tournaments.map(t => {
             const standings = calculateStandings(t);
             return `
-                <div class="card history-item">
+                <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleHistoryDetail(${t.id})">
                         <div>
                             <h3>${t.name}</h3>
@@ -747,17 +682,13 @@
 
         syncData();
 
-        // Aktualizujeme zobrazení konečné tabulky v daném detailu
         const newStandings = calculateStandings(tourney);
         const tbody = document.getElementById(`history-standings-${tourneyId}`);
-        if (tbody) {
-            tbody.innerHTML = renderStandingsRowsHtml(newStandings);
-        }
+        if (tbody) tbody.innerHTML = renderStandingsRowsHtml(newStandings);
     }
 
     function toggleHistoryDetail(id) {
-        const el = document.getElementById(`history-detail-${id}`);
-        el.classList.toggle('hidden');
+        document.getElementById(`history-detail-${id}`).classList.toggle('hidden');
     }
 
     function deleteHistoryTourney(id) {
