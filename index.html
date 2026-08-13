@@ -11,12 +11,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#2563eb">
 
-    <!-- Ikonka poháru 🏆 pro mobilní plochu a záložku -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
+    <!-- Ikonka poháru pro mobilní plochu a záložku -->
+    <link rel="icon" href="https://cdn.imagetourls.com/uploads/tyImg/HiuZErjj.png">
+    <link rel="apple-touch-icon" href="https://cdn.imagetourls.com/uploads/tyImg/HiuZErjj.png">
 
     <!-- Manifest definující název a ikonku při instalaci na plochu -->
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Turnaje","short_name":"Turnaje","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#2563eb","icons":[{"src":"data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>","sizes":"512x512","type":"image/svg+xml"}]}'>
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Turnaje","short_name":"Turnaje","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#2563eb","icons":[{"src":"https://cdn.imagetourls.com/uploads/tyImg/HiuZErjj.png","sizes":"512x512","type":"image/png"}]}'>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -79,8 +79,9 @@
 <body>
 
 <div class="container">
-    <div style="display: flex; align-items: center; margin-bottom: 15px;">
-        <h1 style="font-size: 1.5em; color: #0f172a;">🏆 Turnaje</h1>
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+        <img src="https://cdn.imagetourls.com/uploads/tyImg/HiuZErjj.png" alt="Logo Turnaje" style="height: 42px; width: auto; object-fit: contain;">
+        <h1 style="font-size: 1.6em; color: #0f172a; margin: 0;">Turnaje</h1>
         <span id="sync-status" class="sync-badge">Connecting...</span>
     </div>
 
