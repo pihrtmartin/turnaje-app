@@ -2,1827 +2,710 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HC Slovan Louny - Turnaje</title>
-    
-    <!-- Definice ikony a PWA nastavení -->
-    <link rel="icon" type="image/png" href="Logo.png">
-    <link rel="apple-touch-icon" href="Logo.png">
-    <link rel="manifest" href="manifest.json">
-    
-    <meta name="apple-mobile-web-app-title" content="Slovan Louny">
-    <meta name="application-name" content="Slovan Louny">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0b192c">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnaje</title>
 
-    <!-- Firebase knihovny pro online databázi -->
+    <!-- Název a nastavení pro instalaci na plochu (PWA) -->
+    <meta name="apple-mobile-web-app-title" content="Turnaje">
+    <meta name="application-name" content="Turnaje">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Ikonka a PWA Manifest -->
+    <link rel="icon" type="image/png" href="pohar.png">
+    <link rel="apple-touch-icon" href="pohar.png">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
         :root {
-            --primary-blue: #0046be;
-            --primary-dark: #003087;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
         }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #0b192c;
-            background-image: 
-                linear-gradient(rgba(10, 25, 45, 0.75), rgba(10, 25, 45, 0.85)),
-                url("https://cdn.phototourl.com/free/2026-08-10-2cd065f0-0050-4fd2-97c3-3f7e40bfd761.jpg");
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            overscroll-behavior-y: none;
-        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
+        .container { max-width: 950px; margin: 0 auto; }
         
-        .app-header-bar {
-            background: linear-gradient(135deg, #0b192c, #1e3a8a);
-            color: white;
-            padding: 12px 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
-            position: sticky;
-            top: 0;
-            z-index: 999;
-            border-bottom: 2px solid var(--primary-blue);
-        }
-        .app-header-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .app-header-logo {
-            width: 36px;
-            height: 36px;
-            object-fit: contain;
-            background: #fff;
-            border-radius: 50%;
-            padding: 2px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-        .app-header-title {
-            font-size: 16px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-        .app-header-badge {
-            background: rgba(255,255,255,0.15);
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { flex: 1; min-width: 110px; padding: 12px; border: none; background: #e2e8f0; color: var(--text); font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center; }
+        .tab-btn.active { background: var(--primary); color: white; }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(6px);
-            padding: 15px;
-            min-height: calc(100vh - 61px);
-            box-sizing: border-box;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        h1, h2, h3 {
-            color: var(--primary-blue);
-            border-bottom: 2px solid var(--primary-blue);
-            padding-bottom: 5px;
-            font-size: 22px;
-        }
-        .form-group {
-            margin-bottom: 12px;
-        }
-        label {
-            display: block;
-            margin-bottom: 4px;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        input[type="text"], input[type="file"], select, input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
-            background: #fff;
-        }
-        button {
-            background-color: var(--primary-blue);
-            color: white;
-            padding: 12px 15px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 5px;
-        }
-        button:hover {
-            background-color: var(--primary-dark);
-        }
-        .team-card, .player-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #fafafa;
-            padding: 10px;
-            margin-bottom: 8px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
-        .team-logo {
-            width: 45px;
-            height: 45px;
-            object-fit: contain;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .nav-bar {
-            margin-bottom: 15px;
-            display: flex;
-            gap: 10px;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            width: auto;
-            padding: 8px 12px;
-            font-size: 14px;
-        }
-        .btn-warning {
-            background-color: #ffc107;
-            color: #212529;
-            width: auto;
-            padding: 6px 10px;
-            font-size: 14px;
-        }
-        .btn-danger {
-            background-color: #dc3545;
-            width: auto;
-            padding: 6px 10px;
-            font-size: 14px;
-        }
-        .btn-success {
-            background-color: #28a745;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        .screen {
-            display: none;
-        }
-        .screen.active {
-            display: block;
-        }
-        .home-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            border-bottom: 3px solid var(--primary-blue);
-            padding-bottom: 10px;
-        }
-        .home-header img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-        }
-        .home-header h1 {
-            margin: 0;
-            border: none;
-            font-size: 24px;
-        }
-        .home-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 15px;
-        }
-        .home-menu button {
-            padding: 16px;
-            font-size: 17px;
-        }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h2, h3, h4 { margin-bottom: 15px; color: #0f172a; }
         
-        .scoreboard-panel {
-            background: #f8fafc;
-            border: 2px solid var(--primary-blue);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 12px;
-            position: relative;
-        }
-        .scoreboard-panel.penalty-panel {
-            border-color: #dc3545;
-            background: #fdf2f2;
-        }
-        
-        .scoreboard-center-title {
-            text-align: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-            color: var(--primary-dark);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-        .penalty-panel .scoreboard-center-title {
-            color: #b91c1c;
-        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9em; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1em; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 200px; }
 
-        .scoreboard-grid {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            align-items: center;
-            gap: 6px;
-        }
+        .btn { padding: 10px 16px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: var(--primary); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #64748b; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm { padding: 5px 10px; font-size: 0.85em; }
 
-        .team-side-box {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            min-width: 0;
-        }
-        .team-side-box.right-side {
-            flex-direction: row-reverse;
-            text-align: right;
-        }
+        .player-row { display: flex; gap: 10px; margin-bottom: 8px; }
+        .team-config { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; background: #f1f5f9; padding: 8px; border-radius: 6px; }
+        .team-config input[type="color"] { width: 40px; height: 38px; padding: 2px; cursor: pointer; border: none; }
 
-        .board-logo {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            flex-shrink: 0;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid var(--border); }
+        th { background: #f1f5f9; font-size: 0.85em; text-transform: uppercase; }
+        .team-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; color: white; font-weight: bold; font-size: 0.9em; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
 
-        .team-info-col {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-            flex: 1;
-        }
+        .match-card { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: white; }
+        .score-input { width: 50px; text-align: center; font-weight: bold; font-size: 1.1em; }
 
-        .board-team-name {
-            font-size: 0.7rem;
-            font-weight: bold;
-            color: #475569;
-            text-transform: uppercase;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            line-height: 1.1;
-        }
-        .penalty-panel .board-team-name {
-            font-size: 0.65rem;
-        }
+        .sync-badge { font-size: 0.8em; padding: 3px 8px; border-radius: 12px; background: #fca5a5; color: #991b1b; margin-left: auto; }
+        .sync-badge.online { background: #d1fae5; color: #065f46; }
 
-        .board-team-label {
-            font-size: 0.6rem;
-            color: #64748b;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .score-display-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            font-size: 2.2rem;
-            font-weight: bold;
-            line-height: 1;
-            color: var(--primary-blue);
-            padding: 0 4px;
-            flex-shrink: 0;
-        }
-        .penalty-panel .score-display-wrapper {
-            color: #dc3545;
-            font-size: 1.8rem;
-        }
-        .score-separator {
-            font-weight: bold;
-            padding-bottom: 4px;
-        }
-
-        .match-actions-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .match-actions-grid button {
-            margin-top: 0;
-            padding: 12px 10px;
-            font-size: 14px;
-        }
-        .btn-goal-louny { background-color: var(--primary-blue); }
-        .btn-goal-opp { background-color: #28a745; }
-        .btn-pen-louny { background-color: #dc3545; }
-        .btn-pen-opp { background-color: #d9534f; }
-
-        .event-item {
-            background: #fdfdfd;
-            border-left: 4px solid var(--primary-blue);
-            padding: 8px 10px;
-            margin-bottom: 6px;
-            border-radius: 4px;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .match-card-item {
-            background: #fff;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        @media (min-width: 450px) {
-            .match-card-item {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-        }
-        .match-card-info {
-            flex: 1;
-            min-width: 0;
-        }
-        .match-card-teams {
-            font-size: 15px;
-            font-weight: bold;
-            color: var(--primary-dark);
-            word-break: break-word;
-            overflow-wrap: break-word;
-            margin-top: 2px;
-        }
-        .match-card-score-box {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-        @media (min-width: 450px) {
-            .match-card-score-box {
-                justify-content: flex-end;
-            }
-        }
-        .match-card-badge {
-            background: #e6f0ff;
-            padding: 4px 10px;
-            border-radius: 6px;
-            color: var(--primary-blue);
-            font-weight: bold;
-            font-size: 15px;
-            white-space: nowrap;
-        }
-
-        table.stats-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            background: #fff;
-            font-size: 13px;
-        }
-        table.stats-table th, table.stats-table td {
-            border: 1px solid #ddd;
-            padding: 6px;
-            text-align: center;
-        }
-        table.stats-table th {
-            background-color: var(--primary-blue);
-            color: white;
-        }
-        table.stats-table td:nth-child(2) {
-            text-align: left;
-        }
-
-        .rink-tactical-board {
-            position: relative;
-            background-color: #eaf3fb;
-            background-image: 
-                radial-gradient(circle at 50% 15%, rgba(0, 70, 190, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 50% 85%, rgba(220, 53, 69, 0.08) 0%, transparent 30%),
-                linear-gradient(to bottom, rgba(0, 70, 190, 0.05) 50%, rgba(255, 255, 255, 0.2) 50%);
-            border: 3px solid #bce0fd;
-            border-radius: 20px;
-            padding: 15px 10px;
-            margin-top: 10px;
-            min-height: 380px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden;
-            box-shadow: inset 0 0 15px rgba(0, 70, 190, 0.1);
-        }
-        .rink-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            position: relative;
-            z-index: 2;
-        }
-        .rink-row.center-row {
-            justify-content: center;
-        }
-        .rink-slot {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            flex: 1;
-            max-width: 48%;
-        }
-        .rink-slot.center-slot {
-            max-width: 220px;
-            margin: 0 auto;
-        }
-        .rink-slot label {
-            font-size: 11px;
-            color: var(--primary-dark);
-            margin-bottom: 3px;
-            text-transform: uppercase;
-            font-weight: bold;
-            text-align: center;
-        }
-        .rink-slot select {
-            padding: 6px;
-            font-size: 13px;
-        }
+        .roster-list { list-style: none; padding-left: 0; font-size: 0.9em; color: #475569; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="app-header-bar">
-    <div class="app-header-left">
-        <img src="Logo.png" alt="Logo" class="app-header-logo">
-        <span class="app-header-title">HC Slovan Louny</span>
-    </div>
-    <div class="app-header-badge">Turnaje</div>
-</div>
-
 <div class="container">
-
-    <!-- ÚVODNÍ OBRAZOVKA -->
-    <div id="homeScreen" class="screen active">
-        <div class="home-header">
-            <img src="Logo.png" alt="Logo HC Slovan Louny">
-            <h1>HC Slovan Louny</h1>
-        </div>
-        <div class="home-menu">
-            <button onclick="showScreen('matchScreen')">🏒 Správa zápasů, gólů a faulů</button>
-            <button onclick="showScreen('statsScreen')">📊 Celkové statistiky a exporty</button>
-            <button onclick="showScreen('teamScreen')">🛡️ Správa týmů</button>
-            <button onclick="showScreen('playerScreen')">👥 Soupiska hráčů</button>
-        </div>
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+        <img src="https://cdn.imagetourls.com/uploads/tyImg/HiuZErjj.png" alt="Logo Turnaje" style="height: 42px; width: auto; object-fit: contain;">
+        <h1 style="font-size: 1.6em; color: #0f172a; margin: 0;">Turnaje</h1>
+        <span id="sync-status" class="sync-badge">Connecting...</span>
     </div>
 
-    <!-- OBRAZOVKA: CELKOVÉ STATISTIKY -->
-    <div id="statsScreen" class="screen">
-        <div class="nav-bar">
-            <button class="btn-secondary" onclick="showScreen('homeScreen')">🏠 Úvod</button>
-        </div>
-        <h2>Celkové statistiky hráčů a zápasů</h2>
-        
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-            <button class="btn-success" onclick="exportStatsToExcel()">📥 Exportovat statistiky hráčů do Excelu</button>
-            <button class="btn-success" onclick="exportMatchesToExcel()" style="background-color: #17a2b8;">📥 Exportovat přehled zápasů do Excelu</button>
-            <div style="display: flex; gap: 8px; margin-top: 5px;">
-                <button class="btn-secondary" onclick="downloadBackup()" style="flex:1; background-color: #495057;">💾 Stáhnout zálohu (JSON)</button>
-                <button class="btn-secondary" onclick="document.getElementById('backupFileInput').click()" style="flex:1; background-color: #495057;">📂 Obnovit ze zálohy</button>
-                <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="restoreBackup(event)">
+    <!-- Navigace -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('new-tournament', event)">Nový turnaj</button>
+        <button class="tab-btn" onclick="switchTab('active-tournament', event)">Aktivní turnaj</button>
+        <button class="tab-btn" onclick="switchTab('history', event)">Historie</button>
+    </div>
+
+    <!-- 1. ZÁLOŽKA: NOVÝ TURNAJ -->
+    <div id="tab-new-tournament" class="tab-content">
+        <div class="card">
+            <h2>Základní informace</h2>
+            <div class="row">
+                <div class="col form-group">
+                    <label>Název turnaje / Sport</label>
+                    <input type="text" id="tourney-name" placeholder="např. Vánoční turnaj v badmintonu">
+                </div>
+                <div class="col form-group">
+                    <label>Datum</label>
+                    <input type="date" id="tourney-date">
+                </div>
             </div>
         </div>
 
-        <div id="overallStatsContainer"></div>
-    </div>
-
-    <!-- OBRAZOVKA: SPRÁVA TÝMŮ -->
-    <div id="teamScreen" class="screen">
-        <div class="nav-bar">
-            <button class="btn-secondary" onclick="showScreen('homeScreen')">🏠 Úvod</button>
-        </div>
-        <h2>Správa týmů (soupeřů)</h2>
-        <input type="hidden" id="editTeamIndex" value="">
-        <div class="form-group">
-            <label for="teamName">Název týmu:</label>
-            <input type="text" id="teamName" placeholder="např. HC Rakovník">
-        </div>
-        <div class="form-group">
-            <label for="teamLogoUrl">Obrázek / Logo týmu (URL adresa):</label>
-            <input type="text" id="teamLogoUrl" placeholder="https://...">
-            <small style="color:#666;">Nebo nahrajte soubor:</small>
-            <input type="file" id="teamLogoInput" accept="image/*">
-        </div>
-        <button id="teamSubmitBtn" onclick="saveTeam()">Přidat tým</button>
-        <div id="teamList" style="margin-top: 15px;"></div>
-    </div>
-
-    <!-- OBRAZOVKA: SOUPISKA HRÁČŮ -->
-    <div id="playerScreen" class="screen">
-        <div class="nav-bar">
-            <button class="btn-secondary" onclick="showScreen('homeScreen')">🏠 Úvod</button>
-        </div>
-        <h2>Soupiska hráčů</h2>
-        <input type="hidden" id="editPlayerIndex" value="">
-        <div class="form-group">
-            <label for="playerName">Jméno a příjmení hráče:</label>
-            <input type="text" id="playerName" placeholder="např. Jan Novák">
-        </div>
-        <div class="form-group">
-            <label for="playerNumber">Číslo dresu:</label>
-            <input type="text" id="playerNumber" placeholder="např. 88">
-        </div>
-        <button id="playerSubmitBtn" onclick="savePlayer()">Přidat hráče</button>
-        <div id="playerList" style="margin-top: 15px;"></div>
-    </div>
-
-    <!-- OBRAZOVKA: SEZNAM ZÁPASŮ -->
-    <div id="matchScreen" class="screen">
-        <div class="nav-bar">
-            <button class="btn-secondary" onclick="showScreen('homeScreen')">🏠 Úvod</button>
-        </div>
-        <h2>Seznam zápasů</h2>
-        <button onclick="openNewMatchForm()" style="margin-bottom: 15px;">+ Vytvořit nový zápas</button>
-        <div id="matchList"></div>
-    </div>
-
-    <!-- OBRAZOVKA: VYTVOŘENÍ ZÁPASU -->
-    <div id="newMatchScreen" class="screen">
-        <div class="nav-bar">
-            <button class="btn-secondary" onclick="showScreen('matchScreen')">← Zpět</button>
-        </div>
-        <h2>Nový zápas</h2>
-        <div class="form-group">
-            <label for="matchType">Typ zápasu:</label>
-            <select id="matchType" onchange="handleMatchTypeChange()">
-                <option value="turnaj">Turnaj</option>
-                <option value="mistrovsky">Mistrovský</option>
-                <option value="pratelsky">Přátelský</option>
-            </select>
-        </div>
-
-        <div class="form-group" id="groupTournamentName">
-            <label for="matchTournamentSelect">Název turnaje / skupiny:</label>
-            <select id="matchTournamentSelect" onchange="checkTournamentSelection()"></select>
-            <div style="margin-top: 5px;">
-                <input type="text" id="matchTournamentManual" placeholder="Nebo napište nový název turnaje..." style="display:none;">
+        <div class="card">
+            <h2>Nastavení týmů</h2>
+            <div class="row">
+                <div class="col form-group">
+                    <label>Počet týmů</label>
+                    <input type="number" id="team-count" min="2" value="4" onchange="renderTeamSettings()">
+                </div>
+                <div class="col form-group">
+                    <label>Hráčů v jednom týmu</label>
+                    <input type="number" id="players-per-team" min="1" value="2" onchange="updateRequiredPlayers()">
+                </div>
             </div>
+            <p id="total-players-info" style="font-weight: bold; color: var(--primary); margin-bottom: 15px;">Celkem je potřeba hráčů: 8</p>
+            
+            <div id="team-customization"></div>
         </div>
 
-        <div class="form-group" id="groupTeamSelectContainer">
-            <label for="matchTeamSelect">Výběr soupeře ze seznamu:</label>
-            <select id="matchTeamSelect"></select>
-            <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="manualTeamCheckbox" style="width: auto;" onchange="toggleManualTeamInput()">
-                <label for="manualTeamCheckbox" style="margin: 0; font-weight: normal; cursor: pointer;">Napsat jméno soupeře ručně</label>
-            </div>
+        <div class="card">
+            <h2>Seznam hráčů</h2>
+            <p style="font-size: 0.85em; color: #64748b; margin-bottom: 10px;">Jména pište nebo vybírejte z historie. Systém je do týmů rozlosuje zcela náhodně.</p>
+            <div id="players-container"></div>
+            <datalist id="historical-players"></datalist>
+            
+            <button class="btn btn-secondary" onclick="addPlayerField()">+ Přidat dalšího hráče</button>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
+            <button class="btn" style="width: 100%; padding: 15px; font-size: 1.1em;" onclick="createTournament()">🚀 Rozlosovat týmy a zahájit turnaj</button>
         </div>
-
-        <div class="form-group" id="groupTeamManual" style="display: none;">
-            <label for="matchTeamManual">Název soupeře (ručně):</label>
-            <input type="text" id="matchTeamManual" placeholder="např. HC SK Kadaň">
-        </div>
-
-        <button onclick="saveNewMatch()">Zahájit zápas</button>
     </div>
 
-    <!-- OBRAZOVKA: PROBÍHAJÍCÍ ZÁPAS / DETAIL -->
-    <div id="matchDetailScreen" class="screen">
-        <div class="nav-bar">
-            <button class="btn-secondary" onclick="showScreen('matchScreen')">📁 Seznam</button>
-            <button class="btn-warning" onclick="undoLastAction()" style="flex:1;">↩️ Vrátit akci</button>
+    <!-- 2. ZÁLOŽKA: AKTIVNÍ TURNAJ -->
+    <div id="tab-active-tournament" class="tab-content hidden">
+        <div id="no-active-msg" class="card">
+            <p>Momentálně neběží žádný aktivní turnaj. Vytvoř nový v první záložce.</p>
         </div>
-        <h2 id="detailMatchTitle" style="font-size:18px; text-align:center; margin: 5px 0;">Zápas</h2>
-        <p id="detailMatchMeta" style="text-align:center; color:#666; font-size:12px; margin-bottom:10px;"></p>
 
-        <button class="btn-success" onclick="openLineupModal()" style="margin-bottom: 12px; background-color: #17a2b8;">📋 Správa zápasové sestavy (lajny)</button>
-
-        <div class="scoreboard-panel">
-            <div class="scoreboard-center-title">Skóre</div>
-            <div class="scoreboard-grid">
-                <div class="team-side-box">
-                    <img id="logoLouny" src="Logo.png" class="board-logo" alt="Louny">
-                    <div class="team-info-col">
-                        <span class="board-team-label">Domáci</span>
-                        <span class="board-team-name">Louny</span>
+        <div id="active-tournament-view" class="hidden">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 id="active-tourney-title">Turnaj</h2>
+                        <span id="active-tourney-date" style="color: #64748b;"></span>
                     </div>
-                </div>
-                
-                <div class="score-display-wrapper">
-                    <span id="scoreLouny">0</span>
-                    <span class="score-separator">:</span>
-                    <span id="scoreOpp">0</span>
-                </div>
-                
-                <div class="team-side-box right-side">
-                    <div class="team-info-col" style="align-items: flex-end;">
-                        <span class="board-team-label">Hosté</span>
-                        <span class="board-team-name" id="scoreOppName" style="text-align: right;">Soupeř</span>
-                    </div>
-                    <img id="logoOpp" src="" class="board-logo" alt="Soupeř" style="display:none;">
+                    <button class="btn btn-danger" onclick="finishTournament()">Ukončit a uložit turnaj do historie</button>
                 </div>
             </div>
-        </div>
 
-        <div class="scoreboard-panel penalty-panel">
-            <div class="scoreboard-center-title">Tresty (Fauly)</div>
-            <div class="scoreboard-grid">
-                <div class="team-side-box">
-                    <img id="logoLounyPen" src="Logo.png" class="board-logo" alt="Louny">
-                    <div class="team-info-col">
-                        <span class="board-team-label">Fauly</span>
-                        <span class="board-team-name">Louny</span>
-                    </div>
-                </div>
-                
-                <div class="score-display-wrapper">
-                    <span id="penLouny">0</span>
-                    <span class="score-separator">:</span>
-                    <span id="penOpp">0</span>
-                </div>
-
-                <div class="team-side-box right-side">
-                    <div class="team-info-col" style="align-items: flex-end;">
-                        <span class="board-team-label">Fauly</span>
-                        <span class="board-team-name" id="penOppName" style="text-align: right;">Soupeř</span>
-                    </div>
-                    <img id="logoOppPen" src="" class="board-logo" alt="Soupeř" style="display:none;">
+            <div class="card">
+                <h3>Průběžná tabulka</h3>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pořadí</th>
+                                <th>Tým</th>
+                                <th>Z</th>
+                                <th>V</th>
+                                <th>R</th>
+                                <th>P</th>
+                                <th>Skóre</th>
+                                <th>Body</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-body"></tbody>
+                    </table>
                 </div>
             </div>
-        </div>
 
-        <div class="match-actions-grid">
-            <button class="btn-goal-louny" onclick="openEventModal('goal_louny')">🥅 Gól Louny</button>
-            <button class="btn-goal-opp" onclick="addOpponentGoal()">🥅 Gól Soupeř</button>
-            <button class="btn-pen-louny" onclick="openEventModal('pen_louny')">👮 Faul Louny</button>
-            <button class="btn-pen-opp" onclick="openOpponentPenaltyModal()">👮 Faul Soupeř</button>
-        </div>
+            <div class="card">
+                <h3>Rozpis zápasů a výsledky</h3>
+                <div id="matches-container"></div>
+            </div>
 
-        <h3>Události v utkání</h3>
-        <div id="matchEventsList"></div>
+            <div class="card">
+                <h3>Složení týmů</h3>
+                <div id="rosters-container" class="row"></div>
+            </div>
+        </div>
     </div>
 
-</div>
-
-<!-- NAŠEPTÁVAČ PRO RUČNÍ ZADÁVÁNÍ HRÁČŮ -->
-<datalist id="globalPlayerDatalist"></datalist>
-
-<!-- MODÁLNÍ OKNO PRO ZADÁNÍ AKCE S HRÁČEM (Louny) -->
-<div id="eventModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:white; padding:20px; width:90%; max-width:400px; border-radius:8px; max-height:90vh; overflow-y:auto;">
-        <h3 id="modalTitle" style="margin-top:0; color:var(--primary-blue);">Detail události</h3>
-        
-        <div class="form-group" id="modalPlayerGroup">
-            <label id="modalPlayerLabel">Střelec gólu:</label>
-            <select id="modalPlayerSelect"></select>
-            <div style="margin-top:5px;">
-                <input type="text" id="modalPlayerManual" list="globalPlayerDatalist" placeholder="Nebo vepište jméno ručně (našeptávač)...">
-            </div>
-        </div>
-
-        <div class="form-group" id="modalAssistGroup" style="display:none;">
-            <label>Asistence (volitelně):</label>
-            <select id="modalAssistSelect"></select>
-            <div style="margin-top:5px;">
-                <input type="text" id="modalAssistManual" list="globalPlayerDatalist" placeholder="Nebo vepište jméno nahrávače ručně...">
-            </div>
-        </div>
-
-        <div class="form-group" id="modalPenaltyTypeGroup" style="display:none;">
-            <label>Druh faulu / trestu (ČSLH):</label>
-            <select id="modalPenaltyType" onchange="onPenaltyTypeChange()">
-                <option value="Hákování" data-min="2">Hákování (2 min)</option>
-                <option value="Podražení" data-min="2">Podražení (2 min)</option>
-                <option value="Sekání" data-min="2">Sekání (2 min)</option>
-                <option value="Nedovolené bránění" data-min="2">Nedovolené bránění (2 min)</option>
-                <option value="Hrubost" data-min="2">Hrubost (2 min)</option>
-                <option value="Vražedný náraz na mantinel" data-min="5">Vražedný náraz na mantinel (5 min + OK)</option>
-                <option value="Vysoká hůl" data-min="2">Vysoká hůl (2 min / 4 min)</option>
-                <option value="Vpíchnutí špičkou hole" data-min="5">Vpíchnutí špičkou hole (5 min + OK)</option>
-                <option value="Zdržování hry" data-min="2">Zdržování hry (2 min)</option>
-                <option value="Příliš mnoho hráčů na ledě" data-min="2">Příliš mnoho hráčů na ledě (2 min)</option>
-                <option value="Osobní trest" data-min="10">Osobní trest (10 min)</option>
-                <option value="Jiné (vlastní text)" data-min="2">Jiné (vlastní text)</option>
-            </select>
-        </div>
-
-        <div class="form-group" id="modalCustomPenaltyGroup" style="display:none;">
-            <label>Vlastní název trestu:</label>
-            <input type="text" id="modalCustomPenaltyInput" placeholder="např. Nesportovní chování">
-        </div>
-
-        <div class="form-group" id="modalMinutesGroup" style="display:none;">
-            <label>Počet trestných minut (lze upravit):</label>
-            <input type="number" id="modalMinutes" value="2">
-        </div>
-
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <button onclick="confirmModalEvent()" style="background:#28a745; flex:1;">Potvrdit</button>
-            <button onclick="closeEventModal()" style="background:#6c757d; flex:1;">Zrušit</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODÁLNÍ OKNO PRO SPRÁVU SESTAV (LAJN) S HŘIŠTĚM -->
-<div id="lineupModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1100; align-items:center; justify-content:center;">
-    <div style="background:white; padding:20px; width:95%; max-width:520px; border-radius:8px; max-height:92vh; overflow-y:auto;">
-        <h3 style="margin-top:0; color:var(--primary-blue);">Zápasová sestava (lajny)</h3>
-        <p style="font-size:12px; color:#666; margin-top:0;">Rozestavte hráče na taktické hřiště pro jednotlivé formace.</p>
-        
-        <!-- Tlačítka pro výběr lajny -->
-        <div style="display:flex; gap:5px; margin-bottom:12px;">
-            <button class="lineup-tab-btn" onclick="switchLineupTab('lajna1')" id="tab_lajna1" style="flex:1; padding:8px; font-size:13px; background:var(--primary-blue);">Lajna 1</button>
-            <button class="lineup-tab-btn" onclick="switchLineupTab('lajna2')" id="tab_lajna2" style="flex:1; padding:8px; font-size:13px; background:#6c757d;">Lajna 2</button>
-            <button class="lineup-tab-btn" onclick="switchLineupTab('lajna3')" id="tab_lajna3" style="flex:1; padding:8px; font-size:13px; background:#6c757d;">Lajna 3</button>
-            <button class="lineup-tab-btn" onclick="switchLineupTab('ostatni')" id="tab_ostatni" style="flex:1; padding:8px; font-size:13px; background:#6c757d;">Ostatní</button>
-        </div>
-
-        <div id="lineupContainer"></div>
-
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <button onclick="saveLineupData()" style="background:#28a745; flex:1;">Uložit sestavu</button>
-            <button onclick="closeLineupModal()" style="background:#6c757d; flex:1;">Zavřít</button>
+    <!-- 3. ZÁLOŽKA: HISTORIE -->
+    <div id="tab-history" class="tab-content hidden">
+        <div class="card">
+            <h2>Historie turnajů</h2>
+            <div id="history-list"></div>
         </div>
     </div>
 </div>
 
 <script>
-    // =========================================================================
-    // VAŠE PŘESNÁ NAKONFIGUROVANÁ ADRESA A KLÍČE PRO FIREBASE
-    // =========================================================================
+    // Konfigurace Firebase
     const firebaseConfig = {
-        apiKey: "AIzaSyDvooI8Z2oIeMh6YsJdNqqLng7WVuqAScQ",
-        authDomain: "turnaje-83f82.firebaseapp.com",
-        databaseURL: "https://turnaje-83f82-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "turnaje-83f82",
-        storageBucket: "turnaje-83f82.firebasestorage.app",
-        messagingSenderId: "864513156402",
-        appId: "1:864513156402:web:1e2c1e7a8938e7a29c232b"
+        apiKey: "AIzaSyDCRCC7JZ8fUO0ly5EBrJwIMrvB8eq3MD4",
+        authDomain: "hc-slovan-louny.firebaseapp.com",
+        databaseURL: "https://hc-slovan-louny-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "hc-slovan-louny",
+        storageBucket: "hc-slovan-louny.firebasestorage.app",
+        messagingSenderId: "1095365058859",
+        appId: "1:1095365058859:web:1987c8eac2305f9ccca56e",
+        measurementId: "G-7J2DJX4NLJ"
     };
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const dbRef = firebase.database().ref();
+    let db = {
+        historicalPlayers: JSON.parse(localStorage.getItem('tourney_players')) || [],
+        tournaments: JSON.parse(localStorage.getItem('tourney_history')) || [],
+        activeTournament: JSON.parse(localStorage.getItem('tourney_active')) || null
+    };
 
-    let defaultTeams = [
-        { name: "Bílina", logo: "https://i.postimg.cc/6Q7XMnRC/Bilina.jpg" },
-        { name: "Litoměřice", logo: "https://i.postimg.cc/7h4rPRRm/HC-Stadion-Litomerice.png" },
-        { name: "Chomutov", logo: "https://i.postimg.cc/SQLp1y2S/Chomutov.png" },
-        { name: "Kadaň", logo: "https://i.postimg.cc/Cx2yn5tD/Kadan.png" },
-        { name: "Klášterec nad Ohří", logo: "https://i.postimg.cc/KjxChMKH/Klasterec-nad-Ohri.png" },
-        { name: "Litvínov", logo: "https://i.postimg.cc/y8t5Y5gf/Litvinov.png" },
-        { name: "Most", logo: "https://i.postimg.cc/bJHFgw64/Most.png" },
-        { name: "Roudnice nad Labem", logo: "https://i.postimg.cc/rFpYGc5W/Roudnice-nad-Labem.png" },
-        { name: "Teplice", logo: "https://i.postimg.cc/FsnCDqZX/Teplice.png" }
-    ];
+    let firebaseDb = null;
+    let isUpdatingFromCloud = false;
+    const defaultColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
-    let defaultPlayers = [
-        { name: "Křesák Tadeáš", number: "77" },
-        { name: "Květák Lukáš", number: "16" },
-        { name: "Menzl Martin", number: "13" },
-        { name: "Müller Amálie", number: "2" },
-        { name: "Pihrt Kryštof", number: "11" },
-        { name: "Růžek Dominik", number: "84" },
-        { name: "Slavík Jakub", number: "10" },
-        { name: "Slezák Samuel", number: "25" },
-        { name: "Srbecký Adam", number: "21" },
-        { name: "Šimek Jan", number: "2" },
-        { name: "Tichý Jan", number: "1" },
-        { name: "Vacek Jan", number: "66" },
-        { name: "Zimák Josef", number: "18" },
-        { name: "Živný Ondřej", number: "6" }
-    ];
-
-    let teams = [];
-    let players = [];
-    let matches = [];
-
-    let currentMatchIndex = null;
-    let activeModalType = null;
-    let openTournamentsState = {};
-    let activeLineupTab = 'lajna1';
-
-    function saveData() {
-        dbRef.child('tournament_data').set({
-            teams: teams,
-            players: players,
-            matches: matches
-        });
-    }
-
-    function loadDataFromCloud() {
-        dbRef.child('tournament_data').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                teams = data.teams && data.teams.length > 0 ? data.teams : defaultTeams;
-                players = data.players && data.players.length > 0 ? data.players : defaultPlayers;
-                matches = data.matches || [];
-            } else {
-                teams = defaultTeams;
-                players = defaultPlayers;
-                matches = [];
-                saveData();
-            }
-            renderTeams();
-            renderPlayers();
-            renderMatchesList();
-            setupTournamentDropdown();
-            updateGlobalPlayerDatalist();
-        });
-    }
-
-    function updateGlobalPlayerDatalist() {
-        const listEl = document.getElementById('globalPlayerDatalist');
-        if (!listEl) return;
-        listEl.innerHTML = '';
+    window.onload = () => {
+        document.getElementById('tourney-date').valueAsDate = new Date();
+        initFirebase();
+        renderHistoricalPlayersDatalist();
+        renderTeamSettings();
         
-        let uniquePlayers = new Set();
-        players.forEach(p => uniquePlayers.add(`${p.name} (#${p.number})`));
+        if (db.activeTournament) renderActiveTournament();
+        renderHistory();
 
-        matches.forEach(m => {
-            if (m.events && Array.isArray(m.events)) {
-                m.events.forEach(e => {
-                    if (e.player && e.player !== 'Soupeř') uniquePlayers.add(e.player);
-                    if (e.assist && e.assist !== 'Žádná') uniquePlayers.add(e.assist);
-                });
-            }
-        });
-
-        uniquePlayers.forEach(pName => {
-            const opt = document.createElement('option');
-            opt.value = pName;
-            listEl.appendChild(opt);
-        });
-    }
-
-    function downloadBackup() {
-        const dataObj = {
-            teams: teams,
-            players: players,
-            matches: matches,
-            backupDate: new Date().toISOString()
-        };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", "hc_slovan_louny_turnaje_zaloha_" + new Date().toISOString().slice(0,10) + ".json");
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-    }
-
-    function restoreBackup(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const parsed = JSON.parse(e.target.result);
-                if (parsed && parsed.teams && parsed.players) {
-                    if (confirm("Opravdu chcete přepsat současná data zálohou ze dne " + (parsed.backupDate ? parsed.backupDate.slice(0,10) : 'neznámého') + "?")) {
-                        teams = parsed.teams;
-                        players = parsed.players;
-                        matches = parsed.matches || [];
-                        saveData();
-                        renderTeams();
-                        renderPlayers();
-                        renderMatchesList();
-                        alert("Záloha byla úspěšně obnovena!");
-                    }
-                } else {
-                    alert("Chyba: Soubor nemá správný formát zálohy.");
-                }
-            } catch(err) {
-                alert("Chyba při čtení souboru: " + err);
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    }
-
-    function showScreen(screenId) {
-        document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
-        });
-        const targetScreen = document.getElementById(screenId);
-        if (targetScreen) {
-            targetScreen.classList.add('active');
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
         }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        if(screenId === 'matchScreen') renderMatchesList();
-        if(screenId === 'teamScreen') renderTeams();
-        if(screenId === 'playerScreen') renderPlayers();
-        if(screenId === 'statsScreen') renderOverallStats();
+    };
+
+    function switchTab(tabId, evt) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        
+        if (evt) evt.target.classList.add('active');
+        document.getElementById(`tab-${tabId}`).classList.remove('hidden');
     }
 
-    function calculateOverallStatsMap() {
-        let statsMap = {};
-        players.forEach(p => {
-            let fullNameKey = `${p.name} (#${p.number})`;
-            statsMap[fullNameKey] = { name: p.name, number: p.number, goals: 0, assists: 0, points: 0, penalties: 0, pim: 0, penaltyTypes: {} };
-        });
-
-        matches.forEach(m => {
-            if (m.events && Array.isArray(m.events)) {
-                m.events.forEach(ev => {
-                    if (ev.team === 'HC Slovan Louny') {
-                        if (ev.type === 'goal' && ev.player) {
-                            let pKey = Object.keys(statsMap).find(k => ev.player.includes(pKeyBase(k) || k) || ev.player === k);
-                            if (!pKey) {
-                                if (!statsMap[ev.player]) {
-                                    statsMap[ev.player] = { name: ev.player, number: '-', goals: 0, assists: 0, points: 0, penalties: 0, pim: 0, penaltyTypes: {} };
-                                }
-                                pKey = ev.player;
-                            }
-                            statsMap[pKey].goals++;
-                            statsMap[pKey].points++;
-                        }
-                        if (ev.type === 'goal' && ev.assist && ev.assist !== 'Žádná' && ev.assist.trim() !== '') {
-                            let aName = ev.assist;
-                            let aKey = Object.keys(statsMap).find(k => aName.includes(pKeyBase(k) || k) || aName === k);
-                            if (!aKey) {
-                                if (!statsMap[aName]) {
-                                    statsMap[aName] = { name: aName, number: '-', goals: 0, assists: 0, points: 0, penalties: 0, pim: 0, penaltyTypes: {} };
-                                }
-                                aKey = aName;
-                            }
-                            statsMap[aKey].assists++;
-                            statsMap[aKey].points++;
-                        }
-                        if (ev.type === 'penalty' && ev.player) {
-                            let pKey = Object.keys(statsMap).find(k => ev.player.includes(pKeyBase(k) || k) || ev.player === k);
-                            if (!pKey) {
-                                if (!statsMap[ev.player]) {
-                                    statsMap[ev.player] = { name: ev.player, number: '-', goals: 0, assists: 0, points: 0, penalties: 0, pim: 0, penaltyTypes: {} };
-                                }
-                                pKey = ev.player;
-                            }
-                            statsMap[pKey].penalties++;
-                            statsMap[pKey].pim += parseInt(ev.minutes || 2);
-                            let pType = ev.penaltyType || 'Ostatní';
-                            statsMap[pKey].penaltyTypes[pType] = (statsMap[pKey].penaltyTypes[pType] || 0) + 1;
-                        }
-                    }
-                });
-            }
-        });
-        return statsMap;
-    }
-
-    function pKeyBase(str) { return str.split('(')[0].trim(); }
-
-    function renderOverallStats() {
-        const container = document.getElementById('overallStatsContainer');
-        if (!container) return;
-        let statsMap = calculateOverallStatsMap();
-
-        let html = `<table class="stats-table"><thead><tr><th>#</th><th>Hráč</th><th>G</th><th>A</th><th>B</th><th>Fauly</th><th>TM</th></tr></thead><tbody>`;
-        let arrayStats = Object.values(statsMap);
-        arrayStats.sort((a, b) => b.points - a.points || b.goals - a.goals);
-
-        if (arrayStats.length === 0) {
-            html += `<tr><td colspan="7" style="text-align:center;">Zatím žádné statistiky k zobrazení.</td></tr>`;
-        } else {
-            arrayStats.forEach(st => {
-                html += `<tr>
-                    <td><strong>${st.number || '-'}</strong></td>
-                    <td style="font-weight:bold;">${st.name}</td>
-                    <td>${st.goals}</td>
-                    <td>${st.assists}</td>
-                    <td><strong style="color:var(--primary-blue);">${st.points}</strong></td>
-                    <td><strong>${st.penalties}</strong></td>
-                    <td>${st.pim}m</td>
-                </tr>`;
-            });
-        }
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    }
-
-    function exportStatsToExcel() {
-        let statsMap = calculateOverallStatsMap();
-        let arrayStats = Object.values(statsMap);
-        arrayStats.sort((a, b) => b.points - a.points);
-
-        let csvContent = "\uFEFFCislo dresu;Hrac;Goly;Asistence;Body;Pocet faulu;Trestne minuty (TM);Detail faulu\n";
-        arrayStats.forEach(st => {
-            let penKeys = Object.keys(st.penaltyTypes);
-            let penStr = penKeys.length > 0 ? penKeys.map(k => `${k} (${st.penaltyTypes[k]}x)`).join(' | ') : 'Zadne';
-            let row = `"${st.number || '-'}";"${st.name}";"${st.goals}";"${st.assists}";"${st.points}";"${st.penalties}";"${st.pim}";"${penStr}"\n`;
-            csvContent += row;
-        });
-
-        let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        let url = URL.createObjectURL(blob);
-        let link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", "hc_slovan_louny_statistiky_hracu.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function exportMatchesToExcel() {
-        if (!matches || matches.length === 0) {
-            alert('Zatím nejsou uloženy žádné zápasy k exportu.');
-            return;
-        }
-
-        let csvContent = "\uFEFFDatum a cas;Typ zapasu;Turnaj;Soupeř;Skore Louny;Skore Souper;Vysledek\n";
-        matches.forEach(m => {
-            let events = m.events && Array.isArray(m.events) ? m.events : [];
-            let lounyG = events.filter(e => e.type === 'goal' && e.team === 'HC Slovan Louny').length;
-            let oppG = events.filter(e => e.type === 'goal' && e.team === 'opponent').length;
-            let typeLabel = m.type === 'mistrovsky' ? 'Mistrovský' : (m.type === 'pratelsky' ? 'Přátelský' : 'Turnaj');
-            let tName = m.tournament ? m.tournament : '-';
+    function initFirebase() {
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            firebaseDb = firebase.database();
             
-            let resText = 'Remíza';
-            if (lounyG > oppG) resText = 'Výhra Louny';
-            else if (lounyG < oppG) resText = 'Prohra Louny';
+            const syncBadge = document.getElementById('sync-status');
+            syncBadge.innerText = 'Online (Firebase Connected)';
+            syncBadge.classList.add('online');
 
-            let row = `"${m.createdAt || ''}";"${typeLabel}";"${tName}";"${m.opponent || ''}";"${lounyG}";"${oppG}";"${resText}"\n`;
-            csvContent += row;
-        });
+            firebaseDb.ref('tourney_app_data').on('value', snapshot => {
+                const cloudData = snapshot.val();
+                if (cloudData && !isUpdatingFromCloud) {
+                    isUpdatingFromCloud = true;
+                    if (cloudData.historicalPlayers) db.historicalPlayers = cloudData.historicalPlayers;
+                    if (cloudData.tournaments) db.tournaments = cloudData.tournaments;
+                    db.activeTournament = cloudData.activeTournament || null;
 
-        let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        let url = URL.createObjectURL(blob);
-        let link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", "hc_slovan_louny_prehled_zapasu.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function renderTeams() {
-        const teamList = document.getElementById('teamList');
-        if (!teamList) return;
-        teamList.innerHTML = '';
-        teams.forEach((team, index) => {
-            const teamDiv = document.createElement('div');
-            teamDiv.className = 'team-card';
-            teamDiv.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    ${team.logo ? `<img src="${team.logo}" class="team-logo">` : '<div class="team-logo" style="display:flex;align-items:center;justify-content:center;font-size:9px;color:#777;">Bez loga</div>'}
-                    <strong>${team.name}</strong>
-                </div>
-                <div class="action-buttons">
-                    <button class="btn-warning" onclick="editTeam(${index})">Upravit</button>
-                    <button class="btn-danger" onclick="deleteTeam(${index})">Smazat</button>
-                </div>
-            `;
-            teamList.appendChild(teamDiv);
-        });
-        updateTeamDropdowns();
-    }
-
-    function saveTeam() {
-        const name = document.getElementById('teamName').value.trim();
-        const logoUrl = document.getElementById('teamLogoUrl').value.trim();
-        const logoInput = document.getElementById('teamLogoInput');
-        const editIndex = document.getElementById('editTeamIndex').value;
-
-        if (!name) { alert('Zadejte název týmu.'); return; }
-
-        let logoSrc = editIndex !== '' ? teams[editIndex].logo : '';
-        if (logoUrl) { logoSrc = logoUrl; }
-        if (logoInput.files && logoInput.files[0]) {
-            logoSrc = URL.createObjectURL(logoInput.files[0]);
-        }
-
-        if (editIndex !== '') {
-            teams[editIndex] = { name, logo: logoSrc };
-            document.getElementById('editTeamIndex').value = '';
-            document.getElementById('teamSubmitBtn').innerText = 'Přidat tým';
-        } else {
-            teams.push({ name, logo: logoSrc });
-        }
-
-        document.getElementById('teamName').value = '';
-        document.getElementById('teamLogoUrl').value = '';
-        document.getElementById('teamLogoInput').value = '';
-        saveData();
-        renderTeams();
-    }
-
-    function editTeam(index) {
-        document.getElementById('teamName').value = teams[index].name;
-        document.getElementById('teamLogoUrl').value = teams[index].logo && teams[index].logo.startsWith('http') ? teams[index].logo : '';
-        document.getElementById('editTeamIndex').value = index;
-        document.getElementById('teamSubmitBtn').innerText = 'Uložit změny';
-    }
-
-    function deleteTeam(index) {
-        teams.splice(index, 1);
-        saveData();
-        renderTeams();
-    }
-
-    function updateTeamDropdowns() {
-        const select = document.getElementById('matchTeamSelect');
-        if (!select) return;
-        select.innerHTML = '';
-        if (teams.length === 0) {
-            select.innerHTML = '<option value="">Žádné týmy v seznamu</option>';
-            return;
-        }
-        teams.forEach(team => {
-            const opt = document.createElement('option');
-            opt.value = team.name;
-            opt.textContent = team.name;
-            select.appendChild(opt);
-        });
-    }
-
-    function renderPlayers() {
-        const playerList = document.getElementById('playerList');
-        if (!playerList) return;
-        playerList.innerHTML = '';
-        players.forEach((player, index) => {
-            const playerDiv = document.createElement('div');
-            playerDiv.className = 'player-item';
-            playerDiv.innerHTML = `
-                <div><strong>#${player.number || '-'}</strong> ${player.name}</div>
-                <div class="action-buttons">
-                    <button class="btn-warning" onclick="editPlayer(${index})">Upravit</button>
-                    <button class="btn-danger" onclick="deletePlayer(${index})">Smazat</button>
-                </div>
-            `;
-            playerList.appendChild(playerDiv);
-        });
-        updateGlobalPlayerDatalist();
-    }
-
-    function savePlayer() {
-        const name = document.getElementById('playerName').value.trim();
-        const number = document.getElementById('playerNumber').value.trim();
-        const editIndex = document.getElementById('editPlayerIndex').value;
-
-        if (!name) { alert('Zadejte jméno hráče.'); return; }
-
-        if (editIndex !== '') {
-            players[editIndex] = { name, number };
-            document.getElementById('editPlayerIndex').value = '';
-            document.getElementById('playerSubmitBtn').innerText = 'Přidat hráče';
-        } else {
-            players.push({ name, number });
-        }
-
-        document.getElementById('playerName').value = '';
-        document.getElementById('playerNumber').value = '';
-        saveData();
-        renderPlayers();
-    }
-
-    function editPlayer(index) {
-        document.getElementById('playerName').value = players[index].name;
-        document.getElementById('playerNumber').value = players[index].number;
-        document.getElementById('editPlayerIndex').value = index;
-        document.getElementById('playerSubmitBtn').innerText = 'Uložit změny';
-    }
-
-    function deletePlayer(index) {
-        players.splice(index, 1);
-        saveData();
-        renderPlayers();
-    }
-
-    function openNewMatchForm() {
-        document.getElementById('matchType').value = 'turnaj';
-        document.getElementById('matchTeamManual').value = '';
-        document.getElementById('manualTeamCheckbox').checked = false;
-        
-        setupTournamentDropdown();
-        handleMatchTypeChange();
-        updateTeamDropdowns();
-        showScreen('newMatchScreen');
-    }
-
-    function setupTournamentDropdown() {
-        const select = document.getElementById('matchTournamentSelect');
-        const manualInput = document.getElementById('matchTournamentManual');
-        if (!select || !manualInput) return;
-        select.innerHTML = '';
-
-        let existingTournaments = [];
-        matches.forEach(m => {
-            if (m.tournament && !existingTournaments.includes(m.tournament)) {
-                existingTournaments.push(m.tournament);
-            }
-        });
-
-        if (existingTournaments.length === 0) {
-            select.innerHTML = '<option value="__NEW__">+ Napsat nový název turnaje...</option>';
-            manualInput.style.display = 'block';
-            manualInput.value = '';
-        } else {
-            existingTournaments.forEach(tName => {
-                const opt = document.createElement('option');
-                opt.value = tName;
-                opt.textContent = tName;
-                select.appendChild(opt);
+                    saveLocalData();
+                    renderHistoricalPlayersDatalist();
+                    if (db.activeTournament) renderActiveTournament();
+                    renderHistory();
+                    isUpdatingFromCloud = false;
+                }
             });
-            const newOpt = document.createElement('option');
-            newOpt.value = '__NEW__';
-            newOpt.textContent = '+ Napsat nový název turnaje...';
-            select.appendChild(newOpt);
-            manualInput.style.display = 'none';
+        } catch (e) {
+            console.error("Chyba při inicializaci Firebase:", e);
+            document.getElementById('sync-status').innerText = 'Offline (Chyba Firebase)';
         }
     }
 
-    function checkTournamentSelection() {
-        const select = document.getElementById('matchTournamentSelect');
-        const manualInput = document.getElementById('matchTournamentManual');
-        if (select.value === '__NEW__') {
-            manualInput.style.display = 'block';
-            manualInput.focus();
-        } else {
-            manualInput.style.display = 'none';
-        }
-    }
-
-    function handleMatchTypeChange() {
-        const type = document.getElementById('matchType').value;
-        const groupTourn = document.getElementById('groupTournamentName');
-        if (type === 'turnaj') {
-            groupTourn.style.display = 'block';
-        } else {
-            groupTourn.style.display = 'none';
-        }
-    }
-
-    function toggleManualTeamInput() {
-        const isChecked = document.getElementById('manualTeamCheckbox').checked;
-        const groupSelect = document.getElementById('groupTeamSelectContainer');
-        const groupManual = document.getElementById('groupTeamManual');
-        if (isChecked) {
-            groupSelect.style.display = 'none';
-            groupManual.style.display = 'block';
-        } else {
-            groupSelect.style.display = 'block';
-            groupManual.style.display = 'none';
-        }
-    }
-
-    function saveNewMatch() {
-        const matchType = document.getElementById('matchType').value;
-        let tournament = '';
-        if (matchType === 'turnaj') {
-            const tournSelect = document.getElementById('matchTournamentSelect').value;
-            if (tournSelect === '__NEW__') {
-                tournament = document.getElementById('matchTournamentManual').value.trim();
-                if (!tournament) { alert('Zadejte název turnaje.'); return; }
-            } else {
-                tournament = tournSelect;
-            }
-        }
-
-        let opponent = '';
-        const isManual = document.getElementById('manualTeamCheckbox').checked;
-        if (isManual) {
-            opponent = document.getElementById('matchTeamManual').value.trim();
-            if (!opponent) { alert('Zadejte název soupeře.'); return; }
-        } else {
-            opponent = document.getElementById('matchTeamSelect').value;
-            if (!opponent) { alert('Vyberte soupeře ze seznamu.'); return; }
-        }
-
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'});
-
-        const newMatch = {
-            createdAt: dateStr,
-            type: matchType,
-            tournament: tournament,
-            opponent: opponent,
-            events: [],
-            lineups: {
-                lajna1: { lKridlo: '', utocnik: '', pKridlo: '', obranaL: '', obranaP: '', brankar: '' },
-                lajna2: { lKridlo: '', utocnik: '', pKridlo: '', obranaL: '', obranaP: '', brankar: '' },
-                lajna3: { lKridlo: '', utocnik: '', pKridlo: '', obranaL: '', obranaP: '', brankar: '' },
-                ostatni: { lKridlo: '', utocnik: '', pKridlo: '', obranaL: '', obranaP: '', brankar: '' }
-            }
-        };
-
-        matches.unshift(newMatch);
-        saveData();
-        currentMatchIndex = 0;
-        showScreen('matchDetailScreen');
-        renderMatchDetail();
-    }
-
-    function toggleTournamentAccordion(tournName) {
-        openTournamentsState[tournName] = !openTournamentsState[tournName];
-        renderMatchesList();
-    }
-
-    function renderMatchesList() {
-        const listDiv = document.getElementById('matchList');
-        if (!listDiv) return;
-        listDiv.innerHTML = '';
-
-        if (!matches || matches.length === 0) {
-            listDiv.innerHTML = '<p style="color:#666;">Zatím nejsou vytvořeny žádné zápasy.</p>';
-            return;
-        }
-
-        let regularMatches = [];
-        let tournamentsMap = {};
-
-        matches.forEach((m, idx) => {
-            let realIdx = idx;
-            if (m.type === 'turnaj' && m.tournament) {
-                if (!tournamentsMap[m.tournament]) {
-                    tournamentsMap[m.tournament] = [];
-                }
-                tournamentsMap[m.tournament].push({ match: m, index: realIdx });
-            } else {
-                regularMatches.push({ match: m, index: realIdx });
-            }
-        });
-
-        regularMatches.forEach(item => {
-            let m = item.match;
-            let idx = item.index;
-            let events = m.events && Array.isArray(m.events) ? m.events : [];
-            let lounyG = events.filter(e => e.type === 'goal' && e.team === 'HC Slovan Louny').length;
-            let oppG = events.filter(e => e.type === 'goal' && e.team === 'opponent').length;
-            let typeLabel = m.type === 'mistrovsky' ? 'Mistrovský' : 'Přátelský';
-
-            const card = document.createElement('div');
-            card.className = 'match-card-item';
-            card.innerHTML = `
-                <div class="match-card-info">
-                    <span style="font-size:12px; color:#666;">${m.createdAt || ''} (${typeLabel})</span>
-                    <div class="match-card-teams">HC Slovan Louny vs. ${m.opponent || ''}</div>
-                </div>
-                <div class="match-card-score-box">
-                    <span class="match-card-badge">${lounyG} : ${oppG}</span>
-                    <div style="display:flex; gap:5px;">
-                        <button class="btn-warning" style="padding:6px 10px; font-size:12px; width:auto;" onclick="openMatch(${idx})">Otevřít</button>
-                        <button class="btn-danger" style="padding:6px 10px; font-size:12px; width:auto;" onclick="deleteMatch(${idx})">Smazat</button>
-                    </div>
-                </div>
-            `;
-            listDiv.appendChild(card);
-        });
-
-        Object.keys(tournamentsMap).forEach(tName => {
-            let tMatches = tournamentsMap[tName];
-            let isOpen = openTournamentsState[tName] || false;
-            let firstDate = tMatches[0].match.createdAt || '';
-
-            const tournCard = document.createElement('div');
-            tournCard.style.cssText = "background:#fff; border:2px solid var(--primary-blue); border-radius:8px; padding:12px; margin-bottom:10px; box-shadow:0 2px 4px rgba(0,0,0,0.05);";
-            
-            let headerHtml = `
-                <div style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;" onclick="toggleTournamentAccordion('${tName.replace(/'/g, "\\'")}')">
-                    <div>
-                        <span style="font-size:12px; color:#666; display:block;">${firstDate} (Turnaj)</span>
-                        <span style="font-size:17px; font-weight:bold; color:var(--primary-blue);">🏆 Turnaj: ${tName} (${tMatches.length} zápasů)</span>
-                    </div>
-                    <div style="font-size:18px; font-weight:bold; color:var(--primary-blue);">${isOpen ? '▲' : '▼'}</div>
-                </div>
-            `;
-
-            let bodyHtml = '';
-            if (isOpen) {
-                bodyHtml += `<div style="margin-top:12px; border-top:1px solid #ddd; padding-top:10px; display:flex; flex-direction:column; gap:8px;">`;
-                tMatches.forEach(item => {
-                    let m = item.match;
-                    let idx = item.index;
-                    let events = m.events && Array.isArray(m.events) ? m.events : [];
-                    let lounyG = events.filter(e => e.type === 'goal' && e.team === 'HC Slovan Louny').length;
-                    let oppG = events.filter(e => e.type === 'goal' && e.team === 'opponent').length;
-
-                    bodyHtml += `
-                        <div class="match-card-item" style="margin-bottom:0; background:#f8fafc;">
-                            <div class="match-card-info">
-                                <span style="font-size:11px; color:#666;">${m.createdAt || ''}</span>
-                                <div class="match-card-teams" style="font-size:14px;">HC Slovan Louny vs. ${m.opponent || ''}</div>
-                            </div>
-                            <div class="match-card-score-box">
-                                <span class="match-card-badge" style="font-size:14px;">${lounyG} : ${oppG}</span>
-                                <div style="display:flex; gap:5px;">
-                                    <button class="btn-warning" style="padding:6px 10px; font-size:11px; width:auto;" onclick="openMatch(${idx})">Otevřít</button>
-                                    <button class="btn-danger" style="padding:6px 10px; font-size:11px; width:auto;" onclick="deleteMatch(${idx})">Smazat</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                bodyHtml += `</div>`;
-            }
-
-            tournCard.innerHTML = headerHtml + bodyHtml;
-            listDiv.appendChild(tournCard);
-        });
-    }
-
-    function openMatch(index) {
-        currentMatchIndex = index;
-        showScreen('matchDetailScreen');
-        renderMatchDetail();
-    }
-
-    function deleteMatch(index) {
-        if (confirm('Opravdu chcete tento zápas smazat?')) {
-            matches.splice(index, 1);
-            saveData();
-            renderMatchesList();
-        }
-    }
-
-    function renderMatchDetail() {
-        if (currentMatchIndex === null || !matches[currentMatchIndex]) return;
-        const m = matches[currentMatchIndex];
-
-        document.getElementById('detailMatchTitle').innerText = `HC Slovan Louny vs. ${m.opponent}`;
-        let metaTxt = `${m.createdAt || ''} | Typ: ${m.type === 'mistrovsky' ? 'Mistrovský' : (m.type === 'pratelsky' ? 'Přátelský' : 'Turnaj ('+m.tournament+')')}`;
-        document.getElementById('detailMatchMeta').innerText = metaTxt;
-        
-        document.getElementById('scoreOppName').innerText = m.opponent;
-        document.getElementById('penOppName').innerText = m.opponent;
-
-        let foundTeam = teams.find(t => t.name.toLowerCase() === m.opponent.toLowerCase());
-        let oppLogoUrl = foundTeam && foundTeam.logo ? foundTeam.logo : '';
-
-        const logoOpp = document.getElementById('logoOpp');
-        const logoOppPen = document.getElementById('logoOppPen');
-
-        if (oppLogoUrl) {
-            logoOpp.src = oppLogoUrl;
-            logoOpp.style.display = 'block';
-            logoOppPen.src = oppLogoUrl;
-            logoOppPen.style.display = 'block';
-        } else {
-            logoOpp.style.display = 'none';
-            logoOppPen.style.display = 'none';
-        }
-
-        let events = m.events && Array.isArray(m.events) ? m.events : [];
-        let lounyG = events.filter(e => e.type === 'goal' && e.team === 'HC Slovan Louny').length;
-        let oppG = events.filter(e => e.type === 'goal' && e.team === 'opponent').length;
-
-        let lounyP = events.filter(e => e.type === 'penalty' && e.team === 'HC Slovan Louny').length;
-        let oppP = events.filter(e => e.type === 'penalty' && e.team === 'opponent').length;
-
-        document.getElementById('scoreLouny').innerText = lounyG;
-        document.getElementById('scoreOpp').innerText = oppG;
-        document.getElementById('penLouny').innerText = lounyP;
-        document.getElementById('penOpp').innerText = oppP;
-
-        const eventsList = document.getElementById('matchEventsList');
-        eventsList.innerHTML = '';
-
-        if (events.length === 0) {
-            eventsList.innerHTML = '<p style="color:#666; font-size:13px;">Zatím žádné události v utkání.</p>';
-        } else {
-            const reversedEvents = events.slice().reverse();
-
-            reversedEvents.forEach((ev, revIdx) => {
-                let evIdx = events.length - 1 - revIdx;
-
-                const item = document.createElement('div');
-                item.className = 'event-item';
-                let icon = ev.type === 'goal' ? '🥅 Gól' : '👮 Faul';
-                let detailStr = `${ev.team}: ${ev.player || ''}`;
-                if (ev.type === 'goal' && ev.assist && ev.assist !== 'Žádná') {
-                    detailStr += ` (Asistence: ${ev.assist})`;
-                }
-                if (ev.penaltyType) {
-                    detailStr += ` (${ev.penaltyType} - ${ev.minutes} min)`;
-                }
-                let timeStr = ev.eventTime ? `<span style="font-size:11px; color:#666; display:block;">[${ev.eventTime}]</span>` : '';
-                
-                item.innerHTML = `
-                    <div>
-                        ${timeStr}
-                        <strong>${icon}</strong> - ${detailStr}
-                    </div>
-                    <button class="btn-danger" style="padding:2px 6px; font-size:11px;" onclick="removeEvent(${evIdx})">✕</button>
-                `;
-                eventsList.appendChild(item);
+    function syncData() {
+        saveLocalData();
+        if (firebaseDb) {
+            firebaseDb.ref('tourney_app_data').set({
+                historicalPlayers: db.historicalPlayers,
+                tournaments: db.tournaments,
+                activeTournament: db.activeTournament
             });
         }
     }
 
-    function addOpponentGoal() {
-        if (currentMatchIndex === null) return;
-        if (!matches[currentMatchIndex].events) matches[currentMatchIndex].events = [];
-        
-        const now = new Date();
-        const timeFormatted = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'});
-
-        matches[currentMatchIndex].events.push({
-            type: 'goal',
-            team: 'opponent',
-            player: 'Soupeř',
-            assist: 'Žádná',
-            eventTime: timeFormatted
-        });
-        saveData();
-        renderMatchDetail();
+    function saveLocalData() {
+        localStorage.setItem('tourney_players', JSON.stringify(db.historicalPlayers));
+        localStorage.setItem('tourney_history', JSON.stringify(db.tournaments));
+        localStorage.setItem('tourney_active', JSON.stringify(db.activeTournament));
     }
 
-    function openOpponentPenaltyModal() {
-        if (currentMatchIndex === null) return;
-        if (!matches[currentMatchIndex].events) matches[currentMatchIndex].events = [];
-        
-        const now = new Date();
-        const timeFormatted = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'});
+    function renderTeamSettings() {
+        const teamCount = parseInt(document.getElementById('team-count').value) || 2;
+        const container = document.getElementById('team-customization');
+        container.innerHTML = '<h3>Názvy a barvy týmů</h3>';
 
-        matches[currentMatchIndex].events.push({
-            type: 'penalty',
-            team: 'opponent',
-            player: 'Soupeř (trest)',
-            penaltyType: 'Trest',
-            minutes: '2',
-            eventTime: timeFormatted
-        });
-        saveData();
-        renderMatchDetail();
-    }
-
-    function openEventModal(type) {
-        activeModalType = type;
-        const modal = document.getElementById('eventModal');
-        const title = document.getElementById('modalTitle');
-        const playerSelect = document.getElementById('modalPlayerSelect');
-        const assistSelect = document.getElementById('modalAssistSelect');
-        const playerLabel = document.getElementById('modalPlayerLabel');
-        const assistGroup = document.getElementById('modalAssistGroup');
-        const penaltyGroup = document.getElementById('modalPenaltyTypeGroup');
-        const customPenaltyGroup = document.getElementById('modalCustomPenaltyGroup');
-        const minutesGroup = document.getElementById('modalMinutesGroup');
-
-        playerSelect.innerHTML = '';
-        assistSelect.innerHTML = '';
-
-        const noAssistOpt = document.createElement('option');
-        noAssistOpt.value = 'Žádná';
-        noAssistOpt.textContent = '-- Žádná asistence --';
-        assistSelect.appendChild(noAssistOpt);
-
-        players.forEach(p => {
-            const optVal = `${p.name} (#${p.number})`;
-            
-            const opt1 = document.createElement('option');
-            opt1.value = optVal;
-            opt1.textContent = optVal;
-            playerSelect.appendChild(opt1);
-
-            const opt2 = document.createElement('option');
-            opt2.value = optVal;
-            opt2.textContent = optVal;
-            assistSelect.appendChild(opt2);
-        });
-
-        document.getElementById('modalPlayerManual').value = '';
-        document.getElementById('modalAssistManual').value = '';
-        document.getElementById('modalCustomPenaltyInput').value = '';
-
-        if (type === 'goal_louny') {
-            title.innerText = 'Gól - HC Slovan Louny';
-            playerLabel.innerText = 'Střelec gólu:';
-            assistGroup.style.display = 'block';
-            penaltyGroup.style.display = 'none';
-            customPenaltyGroup.style.display = 'none';
-            minutesGroup.style.display = 'none';
-        } else if (type === 'pen_louny') {
-            title.innerText = 'Faul / Trest - HC Slovan Louny';
-            playerLabel.innerText = 'Hráč (potrestaný):';
-            assistGroup.style.display = 'none';
-            penaltyGroup.style.display = 'block';
-            minutesGroup.style.display = 'block';
-            onPenaltyTypeChange();
-        }
-
-        modal.style.display = 'flex';
-    }
-
-    function onPenaltyTypeChange() {
-        const select = document.getElementById('modalPenaltyType');
-        const customGroup = document.getElementById('modalCustomPenaltyGroup');
-        const selectedOpt = select.options[select.selectedIndex];
-        
-        if (select.value === 'Jiné (vlastní text)') {
-            customGroup.style.display = 'block';
-        } else {
-            customGroup.style.display = 'none';
-        }
-
-        const defaultMin = selectedOpt.getAttribute('data-min') || '2';
-        document.getElementById('modalMinutes').value = defaultMin;
-    }
-
-    function closeEventModal() {
-        document.getElementById('eventModal').style.display = 'none';
-    }
-
-    function confirmModalEvent() {
-        if (currentMatchIndex === null) return;
-        const manualPlayer = document.getElementById('modalPlayerManual').value.trim();
-        const selectedPlayer = document.getElementById('modalPlayerSelect').value;
-        const playerName = manualPlayer ? manualPlayer : selectedPlayer;
-
-        if (!playerName) { alert('Vyberte nebo napište jméno hráče.'); return; }
-
-        const now = new Date();
-        const timeFormatted = now.toLocaleDateString('cs-CZ') + ' ' + now.toLocaleTimeString('cs-CZ', {hour: '2-digit', minute:'2-digit'});
-
-        let eventObj = {
-            team: 'HC Slovan Louny',
-            player: playerName,
-            eventTime: timeFormatted
-        };
-
-        if (activeModalType === 'goal_louny') {
-            eventObj.type = 'goal';
-            const manualAssist = document.getElementById('modalAssistManual').value.trim();
-            const selectedAssist = document.getElementById('modalAssistSelect').value;
-            eventObj.assist = manualAssist ? manualAssist : selectedAssist;
-        } else if (activeModalType === 'pen_louny') {
-            eventObj.type = 'penalty';
-            const penTypeSelect = document.getElementById('modalPenaltyType');
-            let pType = penTypeSelect.value;
-            if (pType === 'Jiné (vlastní text)') {
-                pType = document.getElementById('modalCustomPenaltyInput').value.trim() || 'Jiné';
-            }
-            eventObj.penaltyType = pType;
-            eventObj.minutes = document.getElementById('modalMinutes').value || '2';
-        }
-
-        if (!matches[currentMatchIndex].events) matches[currentMatchIndex].events = [];
-        matches[currentMatchIndex].events.push(eventObj);
-        saveData();
-        closeEventModal();
-        renderMatchDetail();
-    }
-
-    function removeEvent(evIdx) {
-        if (currentMatchIndex === null) return;
-        matches[currentMatchIndex].events.splice(evIdx, 1);
-        saveData();
-        renderMatchDetail();
-    }
-
-    function undoLastAction() {
-        if (currentMatchIndex === null || !matches[currentMatchIndex]) return;
-        let evs = matches[currentMatchIndex].events;
-        if (!evs || evs.length === 0) {
-            alert('Žádná akce k vrácení.');
-            return;
-        }
-        evs.pop();
-        saveData();
-        renderMatchDetail();
-    }
-
-    function openLineupModal() {
-        if (currentMatchIndex === null || !matches[currentMatchIndex]) return;
-        const m = matches[currentMatchIndex];
-        if (!m.lineups) {
-            m.lineups = {
-                lajna1: { lKridlo: '', utocnik: '', pKridlo: '', obranaL: '', obranaP: '', brankar: '' },
-                lajna2: { lKridlo: '', utocnik: '', pKridlo: '', obranaL: '', obranaP: '', brankar: '' },
-                lajna3: { lKridlo: '', utocnik: '', pKridlo: '', obranaL: '', obranaP: '', brankar: '' },
-                ostatni: { lKridlo: '', utocnik: '', pKridlo: '', obranaL: '', obranaP: '', brankar: '' }
-            };
-        }
-        activeLineupTab = 'lajna1';
-        renderActiveLineupForm();
-        document.getElementById('lineupModal').style.display = 'flex';
-    }
-
-    function switchLineupTab(tabKey) {
-        collectCurrentLineupInputs();
-        activeLineupTab = tabKey;
-        
-        document.querySelectorAll('.lineup-tab-btn').forEach(btn => {
-            btn.style.background = '#6c757d';
-        });
-        document.getElementById('tab_' + tabKey).style.background = 'var(--primary-blue)';
-        
-        renderActiveLineupForm();
-    }
-
-    function collectCurrentLineupInputs() {
-        if (currentMatchIndex === null || !matches[currentMatchIndex]) return;
-        let m = matches[currentMatchIndex];
-        if (!m.lineups) m.lineups = {};
-        if (!m.lineups[activeLineupTab]) m.lineups[activeLineupTab] = {};
-
-        ['lKridlo', 'utocnik', 'pKridlo', 'obranaL', 'obranaP', 'brankar'].forEach(posKey => {
-            const sel = document.getElementById(`lineup_${activeLineupTab}_${posKey}`);
-            if (sel) {
-                m.lineups[activeLineupTab][posKey] = sel.value;
-            }
-        });
-    }
-
-    function renderActiveLineupForm() {
-        const container = document.getElementById('lineupContainer');
-        if (!container || currentMatchIndex === null) return;
-        const m = matches[currentMatchIndex];
-        let currentData = m.lineups && m.lineups[activeLineupTab] ? m.lineups[activeLineupTab] : {};
-
-        let generatePlayerOptions = (selectedVal) => {
-            let opts = `<option value="">-- Vyber hráč --</option>`;
-            players.forEach(p => {
-                let pStr = `${p.name} (#${p.number})`;
-                let sel = (selectedVal === pStr) ? 'selected' : '';
-                opts += `<option value="${pStr}" ${sel}>${pStr}</option>`;
-            });
-            return opts;
-        };
-
-        let html = `
-            <div class="rink-tactical-board">
-                <!-- 1. řádek (Vrchol): Centr -->
-                <div class="rink-row center-row">
-                    <div class="rink-slot center-slot">
-                        <label>Centr (C)</label>
-                        <select id="lineup_${activeLineupTab}_utocnik">${generatePlayerOptions(currentData.utocnik)}</select>
-                    </div>
+        for (let i = 0; i < teamCount; i++) {
+            const color = defaultColors[i % defaultColors.length];
+            container.innerHTML += `
+                <div class="team-config">
+                    <input type="color" id="team-color-${i}" value="${color}">
+                    <input type="text" id="team-name-${i}" value="Tým ${i + 1}">
                 </div>
+            `;
+        }
+        updateRequiredPlayers();
+    }
 
-                <!-- 2. řádek: Křídla -->
-                <div class="rink-row">
-                    <div class="rink-slot">
-                        <label>Levé křídlo (LK)</label>
-                        <select id="lineup_${activeLineupTab}_lKridlo">${generatePlayerOptions(currentData.lKridlo)}</select>
-                    </div>
-                    <div class="rink-slot">
-                        <label>Pravé křídlo (PK)</label>
-                        <select id="lineup_${activeLineupTab}_pKridlo">${generatePlayerOptions(currentData.pKridlo)}</select>
-                    </div>
-                </div>
+    function updateRequiredPlayers() {
+        const teamCount = parseInt(document.getElementById('team-count').value) || 0;
+        const playersPerTeam = parseInt(document.getElementById('players-per-team').value) || 0;
+        const total = teamCount * playersPerTeam;
+        
+        document.getElementById('total-players-info').innerText = `Celkem je potřeba hráčů: ${total}`;
+        
+        const container = document.getElementById('players-container');
+        const currentFields = container.children.length;
+        
+        if (currentFields < total) {
+            for (let i = currentFields; i < total; i++) addPlayerField();
+        }
+    }
 
-                <!-- 3. řádek: Obránci -->
-                <div class="rink-row">
-                    <div class="rink-slot">
-                        <label>Levý obránce (LO)</label>
-                        <select id="lineup_${activeLineupTab}_obranaL">${generatePlayerOptions(currentData.obranaL)}</select>
-                    </div>
-                    <div class="rink-slot">
-                        <label>Pravý obránce (PO)</label>
-                        <select id="lineup_${activeLineupTab}_obranaP">${generatePlayerOptions(currentData.obranaP)}</select>
-                    </div>
-                </div>
-
-                <!-- 4. řádek (Spodek): Brankář -->
-                <div class="rink-row center-row">
-                    <div class="rink-slot center-slot">
-                        <label>Brankář (G)</label>
-                        <select id="lineup_${activeLineupTab}_brankar">${generatePlayerOptions(currentData.brankar)}</select>
-                    </div>
-                </div>
-            </div>
+    function addPlayerField() {
+        const container = document.getElementById('players-container');
+        const index = container.children.length + 1;
+        
+        const div = document.createElement('div');
+        div.className = 'player-row';
+        div.innerHTML = `
+            <input type="text" placeholder="Hráč č. ${index}" class="player-input" list="historical-players">
+            <button class="btn btn-danger" onclick="this.parentElement.remove(); reindexPlayers();">✕</button>
         `;
+        container.appendChild(div);
+    }
 
+    function reindexPlayers() {
+        document.querySelectorAll('.player-input').forEach((input, idx) => {
+            input.placeholder = `Hráč č. ${idx + 1}`;
+        });
+    }
+
+    function renderHistoricalPlayersDatalist() {
+        document.getElementById('historical-players').innerHTML = db.historicalPlayers.map(p => `<option value="${p}">`).join('');
+    }
+
+    function createTournament() {
+        const name = document.getElementById('tourney-name').value.trim() || "Neznámý turnaj";
+        const date = document.getElementById('tourney-date').value;
+        const teamCount = parseInt(document.getElementById('team-count').value);
+        const playersPerTeam = parseInt(document.getElementById('players-per-team').value);
+        
+        let players = [];
+        document.querySelectorAll('.player-input').forEach(input => {
+            const val = input.value.trim();
+            if (val) players.push(val);
+        });
+
+        const totalNeeded = teamCount * playersPerTeam;
+        if (players.length < totalNeeded) {
+            alert(`Sestavili jste ${players.length} hráčů, ale pro ${teamCount} týmů po ${playersPerTeam} hráčích je potřeba celkem ${totalNeeded} hráčů.`);
+            return;
+        }
+
+        players.forEach(p => {
+            if (!db.historicalPlayers.includes(p)) db.historicalPlayers.push(p);
+        });
+
+        let shuffledPlayers = [...players];
+        for (let i = shuffledPlayers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]];
+        }
+
+        let teams = [];
+        for (let i = 0; i < teamCount; i++) {
+            const teamName = document.getElementById(`team-name-${i}`).value.trim() || `Tým ${i + 1}`;
+            const teamColor = document.getElementById(`team-color-${i}`).value;
+            const roster = shuffledPlayers.splice(0, playersPerTeam);
+
+            teams.push({ id: i, name: teamName, color: teamColor, roster: roster });
+        }
+
+        db.activeTournament = {
+            id: Date.now(),
+            name: name,
+            date: date,
+            teams: teams,
+            matches: generateRoundRobin(teams)
+        };
+
+        syncData();
+        renderActiveTournament();
+        switchTab('active-tournament');
+    }
+
+    function generateRoundRobin(teams) {
+        let list = [...teams];
+        if (list.length % 2 !== 0) list.push({ id: -1, name: "BYE" });
+
+        const numRounds = list.length - 1;
+        const halfSize = list.length / 2;
+        let matches = [];
+        let matchId = 1;
+
+        for (let round = 0; round < numRounds; round++) {
+            for (let i = 0; i < halfSize; i++) {
+                const teamA = list[i];
+                const teamB = list[list.length - 1 - i];
+
+                if (teamA.id !== -1 && teamB.id !== -1) {
+                    matches.push({
+                        id: matchId++,
+                        round: round + 1,
+                        homeId: teamA.id,
+                        awayId: teamB.id,
+                        homeScore: null,
+                        awayScore: null
+                    });
+                }
+            }
+            list.splice(1, 0, list.pop());
+        }
+        return matches;
+    }
+
+    function renderActiveTournament() {
+        if (!db.activeTournament) {
+            document.getElementById('no-active-msg').classList.remove('hidden');
+            document.getElementById('active-tournament-view').classList.add('hidden');
+            return;
+        }
+
+        document.getElementById('no-active-msg').classList.add('hidden');
+        document.getElementById('active-tournament-view').classList.remove('hidden');
+
+        const t = db.activeTournament;
+        document.getElementById('active-tourney-title').innerText = t.name;
+        document.getElementById('active-tourney-date').innerText = t.date;
+
+        renderMatches();
+        renderStandings();
+        renderRosters();
+    }
+
+    function renderRosters() {
+        document.getElementById('rosters-container').innerHTML = db.activeTournament.teams.map(team => `
+            <div class="col" style="margin-bottom: 10px;">
+                <span class="team-badge" style="background:${team.color};">${team.name}</span>
+                <ul class="roster-list" style="margin-top: 5px;">
+                    ${team.roster.map(player => `<li>• ${player}</li>`).join('')}
+                </ul>
+            </div>
+        `).join('');
+    }
+
+    function renderMatches() {
+        const container = document.getElementById('matches-container');
+        const t = db.activeTournament;
+        
+        let rounds = {};
+        t.matches.forEach(m => {
+            if (!rounds[m.round]) rounds[m.round] = [];
+            rounds[m.round].push(m);
+        });
+
+        let html = '';
+        for (let r in rounds) {
+            html += `<h4 style="margin: 15px 0 8px 0; color: #475569;">Kolo ${r}</h4>`;
+            rounds[r].forEach(m => {
+                const home = t.teams.find(x => x.id === m.homeId);
+                const away = t.teams.find(x => x.id === m.awayId);
+                
+                const hScore = m.homeScore !== null ? m.homeScore : '';
+                const aScore = m.awayScore !== null ? m.awayScore : '';
+
+                html += `
+                    <div class="match-card">
+                        <div style="flex: 1; text-align: right;">
+                            <span class="team-badge" style="background:${home.color};">${home.name}</span>
+                        </div>
+                        <div style="padding: 0 10px; display: flex; gap: 5px; align-items: center;">
+                            <input type="number" min="0" class="score-input" value="${hScore}" oninput="updateScore(${m.id}, 'home', this.value)">
+                            <span>:</span>
+                            <input type="number" min="0" class="score-input" value="${aScore}" oninput="updateScore(${m.id}, 'away', this.value)">
+                        </div>
+                        <div style="flex: 1; text-align: left;">
+                            <span class="team-badge" style="background:${away.color};">${away.name}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
         container.innerHTML = html;
     }
 
-    function closeLineupModal() {
-        const modal = document.getElementById('lineupModal');
-        if (modal) modal.style.display = 'none';
+    function updateScore(matchId, type, val) {
+        const match = db.activeTournament.matches.find(m => m.id === matchId);
+        if (!match) return;
+
+        const numVal = (val === '' || isNaN(val)) ? null : parseInt(val, 10);
+        if (type === 'home') match.homeScore = numVal;
+        if (type === 'away') match.awayScore = numVal;
+
+        syncData();
+        renderStandings(); // Aktualizuje pouze tabulku bez přepisování zápasových inputů
     }
 
-    function saveLineupData() {
-        if (currentMatchIndex === null || !matches[currentMatchIndex]) return;
-        collectCurrentLineupInputs();
-        saveData();
-        closeLineupModal();
-        alert('Sestava byla úspěšně uložena.');
+    function calculateStandings(tournament) {
+        let stats = {};
+        tournament.teams.forEach(team => {
+            stats[team.id] = { team: team, played: 0, wins: 0, draws: 0, losses: 0, scoreFor: 0, scoreAgainst: 0, points: 0 };
+        });
+
+        tournament.matches.forEach(m => {
+            if (m.homeScore !== null && m.awayScore !== null) {
+                const h = stats[m.homeId];
+                const a = stats[m.awayId];
+
+                h.played++; a.played++;
+                h.scoreFor += m.homeScore; h.scoreAgainst += m.awayScore;
+                a.scoreFor += m.awayScore; a.scoreAgainst += m.homeScore;
+
+                if (m.homeScore > m.awayScore) {
+                    h.wins++; h.points += 3; a.losses++;
+                } else if (m.homeScore < m.awayScore) {
+                    a.wins++; a.points += 3; h.losses++;
+                } else {
+                    h.draws++; a.draws++; h.points += 1; a.points += 1;
+                }
+            }
+        });
+
+        return Object.values(stats).sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.scoreFor - a.scoreAgainst;
+            const diffB = b.scoreFor - b.scoreAgainst;
+            if (diffB !== diffA) return diffB - diffA;
+            return b.scoreFor - a.scoreFor;
+        });
     }
 
-    loadDataFromCloud();
+    function renderStandings() {
+        const sorted = calculateStandings(db.activeTournament);
+        document.getElementById('standings-body').innerHTML = sorted.map((s, idx) => `
+            <tr>
+                <td><strong>${idx + 1}.</strong></td>
+                <td><span class="team-badge" style="background:${s.team.color};">${s.team.name}</span></td>
+                <td>${s.played}</td><td>${s.wins}</td><td>${s.draws}</td><td>${s.losses}</td>
+                <td>${s.scoreFor}:${s.scoreAgainst}</td>
+                <td><strong>${s.points}</strong></td>
+            </tr>
+        `).join('');
+    }
+
+    function finishTournament() {
+        if (!confirm("Opravdu chcete turnaj ukončit a přesunout do historie?")) return;
+
+        db.tournaments.unshift(db.activeTournament);
+        db.activeTournament = null;
+        
+        syncData();
+        renderActiveTournament();
+        renderHistory();
+        switchTab('history');
+    }
+
+    function renderHistory() {
+        const container = document.getElementById('history-list');
+        if (db.tournaments.length === 0) {
+            container.innerHTML = '<p>Zatím zde nemáte žádné odehrané turnaje.</p>';
+            return;
+        }
+
+        container.innerHTML = db.tournaments.map(t => {
+            const standings = calculateStandings(t);
+            return `
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleHistoryDetail(${t.id})">
+                        <div>
+                            <h3>${t.name}</h3>
+                            <span style="color: #64748b;">${t.date} | ${t.teams.length} týmů</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm">Zobrazit / Editovat detail</button>
+                            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteHistoryTourney(${t.id})">🗑️ Smazat</button>
+                        </div>
+                    </div>
+                    
+                    <div id="history-detail-${t.id}" class="hidden" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
+                        <h4>Konečná tabulka:</h4>
+                        <div style="overflow-x: auto; margin-bottom: 20px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Pořadí</th>
+                                        <th>Tým</th>
+                                        <th>Z</th>
+                                        <th>V</th>
+                                        <th>R</th>
+                                        <th>P</th>
+                                        <th>Skóre</th>
+                                        <th>Body</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-standings-${t.id}">
+                                    ${renderStandingsRowsHtml(standings)}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h4>Složení týmů:</h4>
+                        <div class="row" style="margin-bottom: 20px;">
+                            ${t.teams.map(team => `
+                                <div class="col" style="margin-bottom: 10px;">
+                                    <span class="team-badge" style="background:${team.color};">${team.name}</span>
+                                    <ul class="roster-list" style="margin-top: 5px;">
+                                        ${team.roster.map(p => `<li>• ${p}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <h4>Výsledky zápasů (Možno upravit):</h4>
+                        <div id="history-matches-${t.id}">
+                            ${renderHistoryMatchesHtml(t)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderStandingsRowsHtml(standings) {
+        return standings.map((s, idx) => `
+            <tr>
+                <td><strong>${idx + 1}.</strong></td>
+                <td><span class="team-badge" style="background:${s.team.color};">${s.team.name}</span></td>
+                <td>${s.played}</td><td>${s.wins}</td><td>${s.draws}</td><td>${s.losses}</td>
+                <td>${s.scoreFor}:${s.scoreAgainst}</td>
+                <td><strong>${s.points}</strong></td>
+            </tr>
+        `).join('');
+    }
+
+    function renderHistoryMatchesHtml(t) {
+        let rounds = {};
+        t.matches.forEach(m => {
+            if (!rounds[m.round]) rounds[m.round] = [];
+            rounds[m.round].push(m);
+        });
+
+        let html = '';
+        for (let r in rounds) {
+            html += `<h5 style="margin: 10px 0 5px 0; color: #475569;">Kolo ${r}</h5>`;
+            rounds[r].forEach(m => {
+                const home = t.teams.find(x => x.id === m.homeId);
+                const away = t.teams.find(x => x.id === m.awayId);
+                const hScore = m.homeScore !== null ? m.homeScore : '';
+                const aScore = m.awayScore !== null ? m.awayScore : '';
+
+                html += `
+                    <div class="match-card">
+                        <div style="flex: 1; text-align: right;">
+                            <span class="team-badge" style="background:${home.color};">${home.name}</span>
+                        </div>
+                        <div style="padding: 0 10px; display: flex; gap: 5px; align-items: center;">
+                            <input type="number" min="0" class="score-input" value="${hScore}" oninput="updateHistoryScore(${t.id}, ${m.id}, 'home', this.value)">
+                            <span>:</span>
+                            <input type="number" min="0" class="score-input" value="${aScore}" oninput="updateHistoryScore(${t.id}, ${m.id}, 'away', this.value)">
+                        </div>
+                        <div style="flex: 1; text-align: left;">
+                            <span class="team-badge" style="background:${away.color};">${away.name}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        return html;
+    }
+
+    function updateHistoryScore(tourneyId, matchId, type, val) {
+        const tourney = db.tournaments.find(x => x.id === tourneyId);
+        if (!tourney) return;
+
+        const match = tourney.matches.find(m => m.id === matchId);
+        if (!match) return;
+
+        const numVal = (val === '' || isNaN(val)) ? null : parseInt(val, 10);
+        if (type === 'home') match.homeScore = numVal;
+        if (type === 'away') match.awayScore = numVal;
+
+        syncData();
+
+        const newStandings = calculateStandings(tourney);
+        const tbody = document.getElementById(`history-standings-${tourneyId}`);
+        if (tbody) tbody.innerHTML = renderStandingsRowsHtml(newStandings);
+    }
+
+    function toggleHistoryDetail(id) {
+        document.getElementById(`history-detail-${id}`).classList.toggle('hidden');
+    }
+
+    function deleteHistoryTourney(id) {
+        if (!confirm("Opravdu chcete tento turnaj smazat z historie?")) return;
+        db.tournaments = db.tournaments.filter(t => t.id !== id);
+        syncData();
+        renderHistory();
+    }
 </script>
+
 </body>
 </html>
